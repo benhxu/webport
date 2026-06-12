@@ -1,3 +1,5 @@
+import { Resend } from "resend";
+
 declare const process: {
   env: Record<string, string | undefined>;
 };
@@ -23,9 +25,9 @@ type ApiResponse = {
   json: (body: Record<string, unknown>) => void;
 };
 
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 5;
-const requestCounts = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 3;
+const requestTimestamps = new Map<string, number[]>();
 
 const sendJson = (
   response: ApiResponse,
@@ -72,33 +74,38 @@ const getClientIp = (headers: ApiRequest["headers"]) =>
 
 const isRateLimited = (clientIp: string) => {
   const now = Date.now();
-  const current = requestCounts.get(clientIp);
+  const recent = (requestTimestamps.get(clientIp) ?? []).filter(
+    (timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS,
+  );
 
-  if (!current || current.resetAt <= now) {
-    requestCounts.set(clientIp, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  current.count += 1;
-  if (requestCounts.size > 1_000) {
-    for (const [ip, entry] of requestCounts) {
-      if (entry.resetAt <= now) requestCounts.delete(ip);
+  if (requestTimestamps.size > 1_000) {
+    for (const [ip, timestamps] of requestTimestamps) {
+      const active = timestamps.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+      if (active.length) requestTimestamps.set(ip, active);
+      else requestTimestamps.delete(ip);
     }
   }
 
-  return current.count > RATE_LIMIT_MAX_REQUESTS;
+  if (recent.length >= RATE_LIMIT_MAX_REQUESTS) {
+    requestTimestamps.set(clientIp, recent);
+    return true;
+  }
+
+  recent.push(now);
+  requestTimestamps.set(clientIp, recent);
+  return false;
 };
 
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
-    sendJson(response, { success: false, message: "Method not allowed." }, 405);
+    sendJson(response, { ok: false, error: "Method not allowed." }, 405);
     return;
   }
 
   const contentType = getHeader(request.headers, "content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("application/json")) {
-    sendJson(response, { success: false, message: "Content type must be application/json." }, 415);
+    sendJson(response, { ok: false, error: "Content type must be application/json." }, 415);
     return;
   }
 
@@ -107,24 +114,24 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   if (origin && host) {
     try {
       if (new URL(origin).host !== host) {
-        sendJson(response, { success: false, message: "Invalid request origin." }, 403);
+        sendJson(response, { ok: false, error: "Invalid request origin." }, 403);
         return;
       }
     } catch {
-      sendJson(response, { success: false, message: "Invalid request origin." }, 403);
+      sendJson(response, { ok: false, error: "Invalid request origin." }, 403);
       return;
     }
   }
 
   const contentLength = Number(getHeader(request.headers, "content-length") ?? 0);
   if (contentLength > 20_000) {
-    sendJson(response, { success: false, message: "Message is too large." }, 413);
+    sendJson(response, { ok: false, error: "Message is too large." }, 413);
     return;
   }
 
   const payload = readPayload(request.body);
   if (!payload) {
-    sendJson(response, { success: false, message: "Invalid request." }, 400);
+    sendJson(response, { ok: false, error: "Invalid request." }, 400);
     return;
   }
 
@@ -137,13 +144,13 @@ export default async function handler(request: ApiRequest, response: ApiResponse
 
   // Honeypot submissions receive a success response without sending email.
   if (website) {
-    sendJson(response, { success: true });
+    sendJson(response, { ok: true });
     return;
   }
 
   if (isRateLimited(getClientIp(request.headers))) {
     response.setHeader("Retry-After", String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
-    sendJson(response, { success: false, message: "Too many requests. Please try again later." }, 429);
+    sendJson(response, { ok: false, error: "Too many requests. Please try again later." }, 429);
     return;
   }
 
@@ -156,12 +163,12 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     !message ||
     message.length > 5_000
   ) {
-    sendJson(response, { success: false, message: "Please check the form fields." }, 400);
+    sendJson(response, { ok: false, error: "Please check the form fields." }, 400);
     return;
   }
 
   if (!Number.isFinite(startedAt) || Date.now() - startedAt < 1_200) {
-    sendJson(response, { success: false, message: "Please wait a moment and try again." }, 400);
+    sendJson(response, { ok: false, error: "Please wait a moment and try again." }, 400);
     return;
   }
 
@@ -170,7 +177,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const from = process.env.CONTACT_FROM_EMAIL ?? "Ben Xu Portfolio <onboarding@resend.dev>";
 
   if (!apiKey || !to) {
-    sendJson(response, { success: false, message: "Contact delivery is not configured." }, 503);
+    sendJson(response, { ok: false, error: "Contact delivery is not configured." }, 503);
     return;
   }
 
@@ -178,39 +185,33 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const safeEmail = escapeHtml(email);
   const safeSubject = escapeHtml(subject);
   const safeMessage = escapeHtml(message).replace(/\n/g, "<br />");
+  const resend = new Resend(apiKey);
 
   try {
-    const resendResponse = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
-        reply_to: email,
-        subject: `[Portfolio] ${subject}`,
-        text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
-        html: `
-          <h2>New portfolio inquiry</h2>
-          <p><strong>Name:</strong> ${safeName}</p>
-          <p><strong>Email:</strong> ${safeEmail}</p>
-          <p><strong>Subject:</strong> ${safeSubject}</p>
-          <hr />
-          <p>${safeMessage}</p>
-        `,
-      }),
+    const { error } = await resend.emails.send({
+      from,
+      to: [to],
+      replyTo: email,
+      subject: `[Portfolio] ${subject}`,
+      text: `Name: ${name}\nEmail: ${email}\nSubject: ${subject}\n\n${message}`,
+      html: `
+        <h2>New portfolio inquiry</h2>
+        <p><strong>Name:</strong> ${safeName}</p>
+        <p><strong>Email:</strong> ${safeEmail}</p>
+        <p><strong>Subject:</strong> ${safeSubject}</p>
+        <hr />
+        <p>${safeMessage}</p>
+      `,
     });
 
-    if (!resendResponse.ok) {
-      sendJson(response, { success: false, message: "Email delivery failed." }, 502);
+    if (error) {
+      sendJson(response, { ok: false, error: "Email delivery failed." }, 500);
       return;
     }
   } catch {
-    sendJson(response, { success: false, message: "Email delivery failed." }, 502);
+    sendJson(response, { ok: false, error: "Email delivery failed." }, 500);
     return;
   }
 
-  sendJson(response, { success: true });
+  sendJson(response, { ok: true });
 }

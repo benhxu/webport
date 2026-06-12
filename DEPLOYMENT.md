@@ -7,17 +7,18 @@ The production setup uses:
 - Resend for contact-form email delivery
 - PostHog for analytics and session replay
 
-## Required Vercel environment variables
+### Environment variables
 
 Add these in Vercel under **Project Settings > Environment Variables**:
 
 ```text
-VITE_POSTHOG_KEY
-VITE_POSTHOG_HOST=https://us.i.posthog.com
-VITE_POSTHOG_SESSION_REPLAY=true
-RESEND_API_KEY
-CONTACT_TO_EMAIL
-CONTACT_FROM_EMAIL=Ben Xu Portfolio <onboarding@resend.dev>
+RESEND_API_KEY                 — from resend.com dashboard
+CONTACT_TO_EMAIL               — email address that receives messages
+CONTACT_FROM_EMAIL             — Ben Xu Portfolio <onboarding@resend.dev>
+VITE_CONTACT_FORM_ENDPOINT     — /api/contact
+VITE_POSTHOG_KEY               — PostHog project token
+VITE_POSTHOG_HOST              — https://us.i.posthog.com
+VITE_POSTHOG_SESSION_REPLAY    — true
 ```
 
 Do not paste `RESEND_API_KEY` or `CONTACT_TO_EMAIL` into files committed to GitHub.

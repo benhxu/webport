@@ -16,16 +16,6 @@ const sessionId = (() => {
 })();
 
 type TrackPayload = Record<string, string | number | boolean | null>;
-type HeroSceneHandle = {
-  destroy: () => void;
-};
-
-type CubeEventDetail = {
-  eventName?: string;
-  face?: string | null;
-  label?: string | null;
-};
-
 type DebugValue = string | number | boolean | null;
 
 declare global {
@@ -47,16 +37,8 @@ const computeLowPowerMode = () => {
   return isMobile || coarsePointer || reducedMotion || hardwareConcurrency <= 8 || (deviceMemory > 0 && deviceMemory <= 8);
 };
 
-const shouldDeferHeroScene = () => {
-  const handheld = window.matchMedia("(max-width: 900px), (pointer: coarse)").matches;
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  return handheld || reducedMotion;
-};
-
 const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
-  webgl: "waiting",
-  hero_load_ms: null,
   about_story: "waiting",
   max_scroll_depth: "0%",
   errors: 0,
@@ -250,102 +232,6 @@ window.visualViewport?.addEventListener(
   { passive: true },
 );
 
-let heroScene: HeroSceneHandle | null = null;
-let heroSceneLoading = false;
-
-const getLowPowerMode = () => {
-  const lowPowerMode = computeLowPowerMode();
-  updateDebugMetric("low_power_mode", lowPowerMode);
-  return lowPowerMode;
-};
-
-const initHeroScene = async () => {
-  if (heroScene || heroSceneLoading) return;
-  const canvas = document.querySelector<HTMLCanvasElement>("#hero-canvas");
-  const heroRight = document.querySelector<HTMLElement>(".hero-right");
-  if (!canvas || !heroRight) return;
-
-  heroSceneLoading = true;
-  const lowPowerMode = getLowPowerMode();
-  const loadStartedAt = performance.now();
-  updateDebugMetric("webgl", "loading");
-  track("cube_load_requested", {
-    low_power_mode: lowPowerMode,
-  });
-
-  try {
-    const { createHeroScene } = await import("./heroScene");
-    heroScene = createHeroScene(canvas, {
-      lowPowerMode,
-      onReady: () => {
-        heroRight.classList.add("is-webgl-ready");
-        const loadMs = Math.round(performance.now() - loadStartedAt);
-        updateDebugMetric("webgl", "ready");
-        updateDebugMetric("hero_load_ms", loadMs);
-        track("cube_loaded", {
-          load_ms: loadMs,
-          low_power_mode: lowPowerMode,
-        });
-      },
-    });
-  } catch (error) {
-    updateDebugMetric("webgl", "failed");
-    track("cube_load_failed", {
-      low_power_mode: lowPowerMode,
-    });
-    console.error("[portfolio:webgl]", error);
-  } finally {
-    heroSceneLoading = false;
-  }
-};
-
-const scheduleHeroScene = () => {
-  const heroRight = document.querySelector<HTMLElement>(".hero-right");
-  const loadButton = heroRight?.querySelector<HTMLButtonElement>("[data-load-cube]");
-  if (!heroRight) return;
-
-  if (shouldDeferHeroScene()) {
-    heroRight.classList.add("is-webgl-deferred");
-    updateDebugMetric("webgl", "deferred");
-    track("cube_deferred", {
-      reason: "handheld_or_reduced_motion",
-    });
-
-    const loadFromIntent = () => {
-      heroRight.classList.remove("is-webgl-deferred");
-      loadButton?.removeEventListener("click", loadFromIntent);
-      void initHeroScene();
-      track("cube_load_requested_by_user");
-    };
-
-    loadButton?.addEventListener("click", loadFromIntent, { once: true });
-    return;
-  }
-
-  if ("IntersectionObserver" in window) {
-    const sceneObserver = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return;
-        sceneObserver.disconnect();
-        scheduleIdle(() => {
-          void initHeroScene();
-        }, 1000);
-      },
-      { rootMargin: "0px 0px 160px 0px", threshold: 0.1 },
-    );
-    sceneObserver.observe(heroRight);
-    return;
-  }
-
-  scheduleIdle(() => {
-    void initHeroScene();
-  }, 1400);
-};
-
-window.addEventListener("pagehide", () => {
-  heroScene?.destroy();
-});
-
 window.addEventListener("error", () => {
   const nextErrorCount = Number(debugMetrics.errors || 0) + 1;
   updateDebugMetric("errors", nextErrorCount);
@@ -359,16 +245,6 @@ window.addEventListener("unhandledrejection", () => {
   updateDebugMetric("errors", nextErrorCount);
   track("client_error", {
     type: "unhandledrejection",
-  });
-});
-
-window.addEventListener("portfolio:cube_event", (event) => {
-  const detail = (event as CustomEvent<CubeEventDetail>).detail;
-  if (!detail?.eventName) return;
-
-  track(detail.eventName, {
-    face: detail.face ?? null,
-    label: detail.label ?? null,
   });
 });
 
@@ -511,7 +387,9 @@ const initExperienceToggles = () => {
   const setExpanded = (card: HTMLElement, expanded: boolean) => {
     card.classList.toggle("is-expanded", expanded);
     const toggle = card.querySelector<HTMLButtonElement>(".experience-toggle");
+    const expandContent = card.querySelector<HTMLElement>("[data-expand-content]");
     toggle?.setAttribute("aria-expanded", String(expanded));
+    if (expandContent) expandContent.hidden = !expanded;
     const label = Array.from(toggle?.childNodes ?? []).find((node) => node.nodeType === Node.TEXT_NODE);
     if (label) label.textContent = expanded ? "Show less " : "Read more ";
   };
@@ -528,6 +406,11 @@ const initExperienceToggles = () => {
         card: card.id || "unknown",
         expanded: nextExpanded,
       });
+      if (nextExpanded) {
+        track("experience_expanded", {
+          company: card.id === "experience-gtm" ? "marlo" : "freewire",
+        });
+      }
     });
   });
 };
@@ -750,6 +633,9 @@ const updateScrollDepth = () => {
     track("scroll_depth", {
       depth_percent: milestone,
     });
+    track("scroll_milestone", {
+      depth: milestone,
+    });
   });
 };
 
@@ -767,8 +653,9 @@ window.addEventListener(
   { passive: true },
 );
 
-const scrollToContactForm = (location: string) => {
+const scrollToContactForm = (location: "nav" | "hero" | "midpage") => {
   track("contact_clicked", { location });
+  track("cta_clicked", { location });
 
   const contactSection = document.querySelector<HTMLElement>("#contact");
   const messageField = document.querySelector<HTMLTextAreaElement>("#contact-message");
@@ -788,7 +675,12 @@ const contactButtons = document.querySelectorAll<HTMLElement>("[data-contact]");
 
 contactButtons.forEach((button) => {
   button.addEventListener("click", () => {
-    scrollToContactForm(button.className || "unknown");
+    const location = button.closest(".navbar")
+      ? "nav"
+      : button.closest(".hero")
+        ? "hero"
+        : "midpage";
+    scrollToContactForm(location);
   });
 });
 
@@ -805,15 +697,30 @@ const initContactForm = () => {
 
   resetStartedAt();
 
-  const setStatus = (message: string, type: "idle" | "success" | "error" = "idle") => {
+  const setStatus = (
+    message: string,
+    type: "idle" | "success" | "error" = "idle",
+    includeEmailLink = false,
+  ) => {
     status.textContent = message;
     status.classList.remove("is-success", "is-error");
     if (type === "success") status.classList.add("is-success");
     if (type === "error") status.classList.add("is-error");
+    if (includeEmailLink) {
+      const link = document.createElement("a");
+      link.href = "mailto:benwebportfolio@gmail.com";
+      link.textContent = "benwebportfolio@gmail.com";
+      status.replaceChildren("Something went wrong. Email me directly at ", link, ".");
+    }
   };
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    const formData = new FormData(form);
+    track("contact_form_submitted", {
+      has_name: Boolean(String(formData.get("name") ?? "").trim()),
+      has_email: Boolean(String(formData.get("email") ?? "").trim()),
+    });
 
     if (!form.checkValidity()) {
       form.reportValidity();
@@ -821,11 +728,10 @@ const initContactForm = () => {
       return;
     }
 
-    const formData = new FormData(form);
     if (String(formData.get("website") ?? "").trim()) {
       form.reset();
       resetStartedAt();
-      setStatus("Message sent — I'll get back to you soon.", "success");
+      setStatus("Message sent — I'll be in touch soon.", "success");
       return;
     }
 
@@ -841,7 +747,6 @@ const initContactForm = () => {
     submitButton.disabled = true;
     form.setAttribute("aria-busy", "true");
     setStatus("Sending…");
-    track("contact_form_submitted", { status: "started" });
 
     try {
       const controller = new AbortController();
@@ -857,25 +762,25 @@ const initContactForm = () => {
       }).finally(() => globalThis.clearTimeout(timeoutId));
 
       const responseBody = await response.json().catch(() => null);
-      if (!response.ok || responseBody?.success === false) {
-        throw new Error(responseBody?.message || "Form submission failed");
+      if (!response.ok || responseBody?.ok !== true) {
+        const requestError = new Error(responseBody?.error || "Form submission failed") as Error & {
+          status?: number;
+        };
+        requestError.status = response.status;
+        throw requestError;
       }
 
       form.reset();
       resetStartedAt();
-      setStatus("Message sent — I'll get back to you soon.", "success");
-      track("contact_form_submitted", { status: "success" });
+      setStatus("Message sent — I'll be in touch soon.", "success");
+      track("contact_form_success");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "unknown";
-      setStatus(
-        /confirm|activate|verify/i.test(errorMessage)
-          ? "Check the receiving inbox once to activate form delivery."
-          : "Something went wrong. Please try again or use LinkedIn.",
-        "error",
-      );
-      track("contact_form_submitted", {
-        status: "error",
-        error: errorMessage,
+      const statusCode = error instanceof Error && "status" in error
+        ? Number((error as Error & { status?: number }).status) || "network"
+        : "network";
+      setStatus("", "error", true);
+      track("contact_form_error", {
+        status: statusCode,
       });
     } finally {
       submitButton.disabled = false;
@@ -970,8 +875,9 @@ const sectionObserver = new IntersectionObserver(
       if (entry.isIntersecting) {
         if (!viewedSections.has(sectionId)) {
           viewedSections.add(sectionId);
+          const analyticsSection = sectionId === "home" ? "hero" : sectionId;
           track("section_viewed", {
-            section: sectionId,
+            section: analyticsSection,
           });
 
           if (sectionId === "home") {
@@ -1125,7 +1031,6 @@ window.addEventListener("pagehide", () => {
 });
 
 window.addEventListener("load", () => {
-  scheduleHeroScene();
   scheduleHashAlignment(true);
   globalThis.setTimeout(() => scheduleHashAlignment(false), 500);
   track("site_loaded", {

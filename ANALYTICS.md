@@ -27,38 +27,44 @@ all contact-form fields are masked and the form is excluded from autocapture.
 
 ## Useful Events
 
-| Event | What it answers |
-| --- | --- |
-| `site_loaded` | Which devices, themes, and viewports visit? |
-| `section_viewed` | Which sections did visitors reach? |
-| `section_dwell` | How long did visitors spend in each section? |
-| `scroll_started` | Did a visitor engage beyond the landing view? |
-| `scroll_depth` | How far did visitors progress? |
-| `nav_clicked` | Which navigation routes are used? |
-| `cube_face_viewed` | Which projects appeared on the cube? |
-| `cube_face_clicked` | Which cube projects drove deeper exploration? |
-| `experience_card_toggled` | Which roles were expanded? |
-| `contact_clicked` | Which calls to action drove contact intent? |
-| `contact_field_focused` | Where did form engagement begin? |
-| `contact_field_completed` | Where did users abandon the form? |
-| `contact_form_submitted` | Did submission start, succeed, or fail? |
-| `outbound_link_clicked` | Did visitors choose LinkedIn or GitHub? |
-| `engagement_heartbeat` | Was the visitor still actively viewing the site? |
-| `performance_timing` | How quickly did the page load? |
-| `web_vitals` | Did visitors experience layout shift or interaction lag? |
-| `client_error` | Did the browser encounter a runtime failure? |
+| Event | Properties | What it answers |
+| --- | --- | --- |
+| `site_loaded` | `pointer`, `reduced_motion`, `analytics_provider` | Which devices and accessibility preferences visit? |
+| `section_viewed` | `section: hero \| experience \| about \| contact` | Which sections did visitors reach at least once? |
+| `section_dwell` | `section`, `duration_ms`, `max_ratio`, `reason` | How long did visitors actively spend in each section? |
+| `scroll_started` | none | Did a visitor engage beyond the landing view? |
+| `scroll_milestone` | `depth: 25 \| 50 \| 75 \| 100` | What percentage of visitors reached each page-depth milestone? |
+| `scroll_depth` | `depth_percent` | Legacy-compatible page-depth event for existing insights. |
+| `nav_clicked` | `target`, `label` | Which navigation routes are used? |
+| `cta_clicked` | `location: nav \| hero \| midpage` | Which CTA placement creates the most contact intent? |
+| `contact_clicked` | `location` | Legacy-compatible contact-intent event. |
+| `experience_expanded` | `company: marlo \| freewire` | Which role generated enough interest to read more? |
+| `experience_card_toggled` | `card`, `expanded` | How often are experience details opened and closed? |
+| `experience_card_viewed` | `card` | Which experience cards actually entered the viewport? |
+| `contact_form_submitted` | `has_name`, `has_email` | How many visitors attempted to submit, including incomplete attempts? |
+| `contact_form_success` | none | How many submissions were accepted by the contact API? |
+| `contact_form_error` | `status: number \| network` | Where are contact attempts failing? |
+| `contact_field_focused` | `field` | Where does form engagement begin? |
+| `contact_field_completed` | `field`, `has_value` | At which form field do visitors abandon? |
+| `outbound_link_clicked` | `destination`, `label` | Did visitors choose LinkedIn or another external destination? |
+| `engagement_heartbeat` | `visible_duration_ms`, `max_scroll_depth`, `active_section`, `scrolled` | Was the visitor still actively viewing the site? |
+| `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
+| `resource_summary` | resource, script, image, and transfer counts | How heavy was the page for the visitor? |
+| `web_vitals` | `lcp_ms`, `cls`, `inp_ms`, long-task values | Did visitors experience layout shift or interaction lag? |
+| `client_error` | `type` | Did the browser encounter a runtime failure? |
 
 ## Suggested Dashboard
 
 Create these PostHog insights:
 
 1. Funnel: `site_loaded` -> `section_viewed: experience` ->
-   `contact_clicked` -> `contact_form_submitted: success`.
+   `cta_clicked` -> `contact_form_submitted` -> `contact_form_success`.
 2. Trend: median `section_dwell.duration_ms`, broken down by section.
-3. Trend: `scroll_depth`, broken down by device viewport.
-4. Trend: `cube_face_clicked`, broken down by face.
-5. Trend: `contact_form_submitted`, broken down by status.
-6. Performance: p75 `web_vitals.lcp_ms`, `web_vitals.inp_ms`, and
+3. Funnel: `scroll_milestone: 25` -> `50` -> `75` -> `100`.
+4. Trend: `experience_expanded`, broken down by company.
+5. Trend: `cta_clicked`, broken down by location.
+6. Trend: `contact_form_error`, broken down by status.
+7. Performance: p75 `web_vitals.lcp_ms`, `web_vitals.inp_ms`, and
    `web_vitals.cls`.
 
 No email address, message content, or other form value is included in custom

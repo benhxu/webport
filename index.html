@@ -6,6 +6,7 @@
     <meta name="color-scheme" content="dark light" />
     <meta name="theme-color" content="#03050a" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)" />
+    <meta name="robots" content="index, follow" />
     <title>Ben Xu &mdash; Strategy &amp; Operations</title>
     <meta
       name="description"
@@ -63,7 +64,7 @@
         <section id="home" class="hero section-observed" aria-label="Portfolio introduction">
           <div class="hero-left">
             <p class="hero-name">Ben Xu</p>
-            <p class="role-kicker">Systems builder · BizOps</p>
+            <p class="role-kicker">Strategy &amp; Operations · Early-stage startups</p>
             <h1 class="hero-title">
               I turn messy workflows into systems teams
               <span>actually use.</span>
@@ -83,35 +84,6 @@
             </div>
           </div>
 
-          <div class="hero-right" aria-label="Interactive 3D systems artwork">
-            <div class="hero-bg" aria-hidden="true"></div>
-            <div class="hero-fog hero-fog-one" aria-hidden="true"></div>
-            <div class="hero-fog hero-fog-two" aria-hidden="true"></div>
-            <div class="hero-visual-fallback" aria-hidden="true"></div>
-            <canvas id="hero-canvas" aria-hidden="true"></canvas>
-            <div class="hero-visual-overlay" aria-hidden="true"></div>
-            <button class="hero-cube-load" type="button" data-load-cube>
-              Explore 3D work
-              <span aria-hidden="true">-&gt;</span>
-            </button>
-            <aside class="hero-face-panel glass-card" data-face-panel>
-              <div class="face-panel-top">
-                <b data-face-index>01 / 06</b>
-              </div>
-              <strong data-face-title>GTM Reporting System</strong>
-              <p data-face-copy>
-                Replaced 30+ recurring reporting cycles with one operating surface.
-              </p>
-              <div class="face-dots" data-face-dots aria-hidden="true"></div>
-              <a href="#experience-gtm" data-face-link>
-                View system -&gt;
-              </a>
-            </aside>
-            <div class="drag-cue" aria-hidden="true" data-cube-hint>
-              Drag cube to explore work
-              <span></span>
-            </div>
-          </div>
         </section>
 
         <section id="experience" class="experience-section section-observed">
@@ -138,15 +110,19 @@
 
                 <ul class="experience-bullets">
                   <li>
-                    Built GTM reporting that replaced 30+ manual cycles.
+                    Built a GTM reporting system that consolidated 30+ recurring manual cycles
+                    into one operating surface &mdash; eliminating weekly copy-paste overhead across
+                    the team.
                   </li>
                   <li>
-                    Structured creator sourcing and outreach into a repeatable
-                    pipeline.
+                    Designed and operationalized a creator sourcing pipeline from scratch:
+                    defined stages, built the tracking layer, and made outreach repeatable at
+                    scale.
                   </li>
                   <li>
-                    Labeled 10,000+ emails and enriched 2,000+ creator profiles
-                    to improve ML accuracy.
+                    Produced a 10,000-email / 2,000-profile labeled dataset that directly
+                    improved ML model accuracy for creator-fit scoring &mdash; including Python
+                    scripts to clean and structure raw exports.
                   </li>
                 </ul>
 
@@ -154,6 +130,35 @@
                   Read more
                   <span aria-hidden="true">+</span>
                 </button>
+
+                <div class="experience-expand" data-expand-content hidden>
+                  <div class="case-study">
+                    <p class="case-study-label">How it worked</p>
+                    <div class="case-study-steps">
+                      <div class="case-study-step">
+                        <span class="step-num">01</span>
+                        <div>
+                          <strong>The problem</strong>
+                          <p>GTM reporting was fully manual: 30+ weekly cycles, each requiring someone to pull raw data, format a deck, and share it. No single source of truth. Decisions lagged by days.</p>
+                        </div>
+                      </div>
+                      <div class="case-study-step">
+                        <span class="step-num">02</span>
+                        <div>
+                          <strong>What I built</strong>
+                          <p>A unified reporting surface that automated data pulls, standardized metric definitions, and produced a shareable output without manual formatting. Built in Airtable + Google Sheets with Python scripts for data cleanup.</p>
+                        </div>
+                      </div>
+                      <div class="case-study-step">
+                        <span class="step-num">03</span>
+                        <div>
+                          <strong>The outcome</strong>
+                          <p>30+ manual reporting cycles replaced. The team now has a live operating surface they open instead of re-building every week. Freed up meaningful hours/week of ops time.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
                 <div class="experience-stats" aria-label="Marlo.Today impact metrics">
                   <div class="experience-stat">
@@ -202,6 +207,13 @@
                   <span>GTM Reporting</span>
                   <span>Workflow Design</span>
                 </div>
+                <div class="experience-tags experience-tags-tools" aria-label="Tools used at Marlo.Today">
+                  <span>Python</span>
+                  <span>Notion</span>
+                  <span>Airtable</span>
+                  <span>Google Sheets</span>
+                  <span>PostHog</span>
+                </div>
               </article>
 
               <article id="experience-logistics" class="experience-card">
@@ -221,12 +233,14 @@
 
                 <ul class="experience-bullets">
                   <li>
-                    Surfaced $30K+ in inventory gaps across multi-vendor
-                    operations.
+                    Audited multi-vendor procurement records and surfaced $30K+ in inventory
+                    discrepancies that had gone untracked &mdash; giving the ops team a clear
+                    remediation list for the first time.
                   </li>
                   <li>
-                    Improved visibility across procurement and inventory workflows,
-                    reducing issue resolution time.
+                    Rebuilt inventory tracking across procurement and fulfillment workflows,
+                    cutting average issue resolution time and replacing ad-hoc spreadsheets
+                    with a repeatable process.
                   </li>
                 </ul>
 
@@ -270,8 +284,8 @@
                       </svg>
                     </span>
                     <div>
-                      <strong>Better</strong>
-                      <small>Operational Visibility</small>
+                      <strong>4</strong>
+                      <small>Vendors Audited</small>
                     </div>
                   </div>
                 </div>
@@ -281,6 +295,11 @@
                   <span>Reporting</span>
                   <span>Inventory</span>
                   <span>Data Integrity</span>
+                </div>
+                <div class="experience-tags experience-tags-tools" aria-label="Tools used at Freewire Technologies">
+                  <span>Excel</span>
+                  <span>Google Sheets</span>
+                  <span>NetSuite</span>
                 </div>
               </article>
             </div>
@@ -313,11 +332,6 @@
                 reporting, automation, clean handoffs, and decision surfaces
                 that help people move with less drag.
               </p>
-              <div class="about-traits" aria-label="Working style">
-                <span>Systems thinker</span>
-                <span>Operator mindset</span>
-                <span>Fast learner</span>
-              </div>
             </div>
 
             <article class="brainrot-card" data-brainrot>

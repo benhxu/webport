@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "posthog-js": "^1.386.3",
+    "resend": "^6.12.4",
     "three": "^0.184.0"
   }
 }
