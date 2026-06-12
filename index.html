@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="dark light" />
+    <title>Ben Xu &mdash; Strategy &amp; Operations</title>
+    <meta
+      name="description"
+      content="Ben Xu — Strategy & Operations / BizOps. I turn messy workflows into systems teams actually use."
+    />
+    <meta property="og:title" content="Ben Xu &mdash; Strategy &amp; Operations" />
+    <meta
+      property="og:description"
+      content="Operator who builds. GTM reporting, workflow automation, decision systems."
+    />
+    <meta property="og:type" content="website" />
+    <!-- TODO: Add the production og:url before launch. -->
+    <meta property="og:image" content="/hero-art.webp" />
+    <!-- TODO: Replace og:image with an absolute URL after the production domain is known. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <div class="ambient-pointer" aria-hidden="true"></div>
+
+      <header class="navbar" data-nav>
+        <a class="brand" href="#home" aria-label="Ben Xu home">
+          <span class="brand-mark" aria-hidden="true">
+            <span class="brand-b">B</span>
+            <span class="brand-x">X</span>
+          </span>
+        </a>
+        <nav class="nav-links" aria-label="Primary navigation">
+          <a href="#experience" data-nav-link>Experience</a>
+          <a href="#about" data-nav-link>About</a>
+          <a href="#contact" data-nav-link>Contact</a>
+          <!-- TODO: Add public/resume.pdf before deploying the resume links. -->
+          <a href="/resume.pdf" target="_blank" rel="noopener noreferrer">Resume &darr;</a>
+        </nav>
+        <button class="button button-primary nav-cta" type="button" data-contact>
+          Let's talk
+          <span aria-hidden="true">-&gt;</span>
+        </button>
+      </header>
+
+      <main>
+        <section id="home" class="hero section-observed" aria-label="Portfolio introduction">
+          <div class="hero-left">
+            <p class="hero-name">Ben Xu</p>
+            <p class="role-kicker">Systems builder · BizOps</p>
+            <h1 class="hero-title">
+              I turn messy workflows into systems teams
+              <span>actually use.</span>
+            </h1>
+            <p class="hero-proof">
+              Reporting infrastructure · workflow automation · decision systems
+            </p>
+            <div class="hero-actions">
+              <button class="button button-primary" type="button" data-contact>
+                Let's talk
+                <span aria-hidden="true">-&gt;</span>
+              </button>
+              <a class="button button-secondary" href="#experience">
+                See my work
+                <span aria-hidden="true">-&gt;</span>
+              </a>
+            </div>
+          </div>
+
+          <div class="hero-right" aria-label="Interactive 3D systems artwork">
+            <div class="hero-bg" aria-hidden="true"></div>
+            <div class="hero-fog hero-fog-one" aria-hidden="true"></div>
+            <div class="hero-fog hero-fog-two" aria-hidden="true"></div>
+            <div class="hero-visual-fallback" aria-hidden="true"></div>
+            <canvas id="hero-canvas"></canvas>
+            <div class="hero-visual-overlay" aria-hidden="true"></div>
+            <button class="hero-cube-load" type="button" data-load-cube>
+              Explore 3D work
+              <span aria-hidden="true">-&gt;</span>
+            </button>
+            <aside class="hero-face-panel glass-card" data-face-panel aria-live="polite">
+              <div class="face-panel-top">
+                <b data-face-index>01 / 06</b>
+              </div>
+              <strong data-face-title>GTM Reporting System</strong>
+              <p data-face-copy>
+                Replaced 30+ recurring reporting cycles with one operating surface.
+              </p>
+              <div class="face-dots" data-face-dots aria-hidden="true"></div>
+              <a href="#experience-gtm" data-face-link>
+                View system -&gt;
+              </a>
+            </aside>
+            <div class="drag-cue" aria-hidden="true" data-cube-hint>
+              Drag cube to explore work
+              <span></span>
+            </div>
+          </div>
+        </section>
+
+        <section id="experience" class="experience-section section-observed">
+          <div class="experience-shell">
+            <div class="experience-header">
+              <p class="section-kicker">Experience</p>
+            </div>
+            <div class="experience-grid">
+              <article id="experience-gtm" class="experience-card experience-card-featured">
+                <span id="experience-creator" class="experience-anchor" aria-hidden="true"></span>
+                <span id="experience-python" class="experience-anchor" aria-hidden="true"></span>
+                <span id="experience-ml" class="experience-anchor" aria-hidden="true"></span>
+                <div class="experience-card-head">
+                  <div class="company-mark company-mark-m" aria-label="Marlo.Today brand mark">
+                    <img src="/marlo-logo.svg" alt="" aria-hidden="true" />
+                  </div>
+                  <div class="experience-title-group">
+                    <p class="experience-date">2024 &mdash; Present</p>
+                    <h3>BizOps Associate</h3>
+                    <p class="experience-company">Marlo.Today</p>
+                    <p class="experience-industry">Creator economy startup</p>
+                  </div>
+                </div>
+
+                <ul class="experience-bullets">
+                  <li>
+                    Built GTM reporting that replaced 30+ manual cycles.
+                  </li>
+                  <li>
+                    Structured creator sourcing and outreach into a repeatable
+                    pipeline.
+                  </li>
+                  <li>
+                    Labeled 10,000+ emails and enriched 2,000+ creator profiles
+                    to improve ML accuracy.
+                  </li>
+                </ul>
+
+                <button class="experience-toggle" type="button" aria-expanded="false">
+                  Read more
+                  <span aria-hidden="true">+</span>
+                </button>
+
+                <div class="experience-stats" aria-label="Marlo.Today impact metrics">
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M16 11a4 4 0 1 0-8 0" />
+                        <path d="M4 19a6 6 0 0 1 16 0" />
+                        <path d="M19 10a3 3 0 0 1 2 2.8" />
+                        <path d="M5 10a3 3 0 0 0-2 2.8" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>2,000+</strong>
+                      <small>Creators Enriched</small>
+                    </div>
+                  </div>
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 6h16v12H4z" />
+                        <path d="m4 7 8 6 8-6" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>10,000+</strong>
+                      <small>Emails Labeled</small>
+                    </div>
+                  </div>
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 8a7 7 0 1 0 1.7 7" />
+                        <path d="M18 4v4h-4" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>30+</strong>
+                      <small>Reporting Cycles</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="experience-tags" aria-label="Marlo.Today focus areas">
+                  <span>BizOps</span>
+                  <span>Data Labeling</span>
+                  <span>GTM Reporting</span>
+                  <span>Workflow Design</span>
+                </div>
+              </article>
+
+              <article id="experience-logistics" class="experience-card">
+                <div class="experience-card-head">
+                  <div class="company-mark company-mark-f" aria-label="Freewire Technologies brand mark">
+                    <img src="/freewire-logo.svg" alt="" aria-hidden="true" />
+                  </div>
+                  <div class="experience-title-group">
+                    <p class="experience-date">2023</p>
+                    <h3>Supply Chain Analyst Intern</h3>
+                    <p class="experience-company">Freewire Technologies</p>
+                    <p class="experience-industry">
+                      Cleantech &middot; EV Charging Infrastructure
+                    </p>
+                  </div>
+                </div>
+
+                <ul class="experience-bullets">
+                  <li>
+                    Surfaced $30K+ in inventory gaps across multi-vendor
+                    operations.
+                  </li>
+                  <li>
+                    Improved visibility across procurement and inventory workflows,
+                    reducing issue resolution time.
+                  </li>
+                </ul>
+
+                <button class="experience-toggle" type="button" aria-expanded="false">
+                  Read more
+                  <span aria-hidden="true">+</span>
+                </button>
+
+                <div class="experience-stats" aria-label="Freewire Technologies impact metrics">
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon accent-cyan" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 3v18" />
+                        <path d="M17 7.5c-.7-1-2-1.7-3.8-1.7-2.1 0-3.7 1-3.7 2.7 0 1.5 1.1 2.2 3.6 2.8 2.6.6 3.9 1.4 3.9 3.1 0 1.8-1.6 3-4.1 3-1.9 0-3.5-.7-4.4-1.9" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>$30K+</strong>
+                      <small>Discrepancy Identified</small>
+                    </div>
+                  </div>
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="m12 3 8 4.5v9L12 21l-8-4.5v-9L12 3Z" />
+                        <path d="M12 12 4.5 7.7" />
+                        <path d="M12 12v8.5" />
+                        <path d="m12 12 7.5-4.3" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>Multi-vendor</strong>
+                      <small>Supply Chain</small>
+                    </div>
+                  </div>
+                  <div class="experience-stat">
+                    <span class="experience-stat-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M4 17 9 12l4 4 7-9" />
+                        <path d="M15 7h5v5" />
+                      </svg>
+                    </span>
+                    <div>
+                      <strong>Better</strong>
+                      <small>Operational Visibility</small>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="experience-tags" aria-label="Freewire Technologies focus areas">
+                  <span>Supply Chain</span>
+                  <span>Reporting</span>
+                  <span>Inventory</span>
+                  <span>Data Integrity</span>
+                </div>
+              </article>
+            </div>
+
+            <aside class="experience-nudge glass-card">
+              <p>
+                Building something that needs an operator who can also build?
+                Let's talk.
+              </p>
+              <button type="button" class="button button-secondary" data-contact>
+                Email me
+                <span aria-hidden="true">-&gt;</span>
+              </button>
+            </aside>
+          </div>
+        </section>
+
+        <section id="about" class="about-section section-observed">
+          <div class="about-shell">
+            <div class="about-copy">
+              <p class="about-kicker">About</p>
+              <h2>Operator instincts. Builder habits.</h2>
+              <p>
+                I am a business operator who likes messy, ambiguous workflows:
+                the places where teams know the work matters, but the system
+                around it has not caught up yet.
+              </p>
+              <p>
+                My edge is turning that mess into usable infrastructure:
+                reporting, automation, clean handoffs, and decision surfaces
+                that help people move with less drag.
+              </p>
+              <div class="about-traits" aria-label="Working style">
+                <span>Systems thinker</span>
+                <span>Operator mindset</span>
+                <span>Fast learner</span>
+              </div>
+            </div>
+
+            <article class="brainrot-card" data-brainrot>
+              <div class="brainrot-topbar">
+                <div class="brainrot-title-block">
+                  <p class="brainrot-label">Quick Intro</p>
+                  <h2>Ben in 12 seconds</h2>
+                  <p class="brainrot-subcopy">Tap to play with audio</p>
+                </div>
+                <button
+                  class="audio-button"
+                  type="button"
+                  aria-label="Play video with audio"
+                  data-audio-button
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+                    <path d="M16 8.5a5 5 0 0 1 0 7" />
+                  </svg>
+                  <span data-audio-label>Play with audio</span>
+                </button>
+              </div>
+
+              <div class="brainrot-frame">
+                <!-- TODO: Add public/about/subway-surfer.mp4 when the final Quick Intro video is ready. -->
+                <!-- TODO: Replace hero-art.webp with a dedicated Quick Intro video poster. -->
+                <video
+                  class="brainrot-video"
+                  data-video-src="/about/subway-surfer.mp4"
+                  poster="/hero-art.webp"
+                  autoplay
+                  muted
+                  loop
+                  playsinline
+                  preload="none"
+                  data-about-video
+                ></video>
+                <div class="brainrot-fallback" data-brainrot-fallback aria-hidden="true">
+                  <div class="runner-sky"></div>
+                  <div class="runner-city">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <div class="runner-perspective">
+                    <div class="runner-rail runner-rail-left"></div>
+                    <div class="runner-rail runner-rail-center"></div>
+                    <div class="runner-rail runner-rail-right"></div>
+                    <div class="runner-sleeper runner-sleeper-one"></div>
+                    <div class="runner-sleeper runner-sleeper-two"></div>
+                    <div class="runner-sleeper runner-sleeper-three"></div>
+                    <div class="runner-coin runner-coin-one"></div>
+                    <div class="runner-coin runner-coin-two"></div>
+                    <div class="runner-coin runner-coin-three"></div>
+                    <div class="runner-block runner-block-one"></div>
+                    <div class="runner-block runner-block-two"></div>
+                    <div class="runner-avatar" aria-hidden="true">
+                      <span class="avatar-head"></span>
+                      <span class="avatar-body"></span>
+                      <span class="avatar-leg avatar-leg-left"></span>
+                      <span class="avatar-leg avatar-leg-right"></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="video-vignette" aria-hidden="true"></div>
+                <div class="subtitle-overlay" aria-live="polite" data-subtitle>
+                  Find the messy workflow.
+                </div>
+                <div class="brainrot-dots" aria-hidden="true" data-subtitle-dots>
+                  <span class="is-active"></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+              </div>
+
+              <div class="brainrot-controls">
+                <button
+                  type="button"
+                  class="control-button"
+                  aria-label="Pause video"
+                  data-playback-button
+                >
+                  <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 5v14" />
+                    <path d="M16 5v14" />
+                  </svg>
+                  <svg class="play-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 5v14l11-7Z" />
+                  </svg>
+                </button>
+                <div class="timecode">
+                  <span data-current-time>00:00</span>
+                  <span>/</span>
+                  <span data-duration>00:12</span>
+                </div>
+                <div class="progress-track" aria-hidden="true">
+                  <span data-progress></span>
+                </div>
+                <button
+                  type="button"
+                  class="control-button"
+                  aria-label="Open video fullscreen"
+                  data-fullscreen-button
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M8 3H3v5" />
+                    <path d="M16 3h5v5" />
+                    <path d="M21 16v5h-5" />
+                    <path d="M3 16v5h5" />
+                    <path d="M9 9 3 3" />
+                    <path d="m15 9 6-6" />
+                    <path d="m15 15 6 6" />
+                    <path d="m9 15-6 6" />
+                  </svg>
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section id="contact" class="contact-section section-observed">
+          <div class="contact-shell">
+            <div class="contact-copy">
+              <p class="section-kicker">Contact</p>
+              <h2>Let's talk.</h2>
+              <p class="contact-lead">
+                Currently looking for Strategy &amp; Operations, BizOps, or GTM
+                Ops roles at early-stage companies. I help teams replace manual
+                cycles with systems that scale.
+              </p>
+
+              <div class="contact-icons" aria-label="Social links">
+                <a
+                  class="contact-icon"
+                  href="https://www.linkedin.com/in/benhxu2/"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open Ben Xu LinkedIn profile"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6.5 9.5v8" />
+                    <path d="M6.5 6.5v.01" />
+                    <path d="M10.5 17.5v-8" />
+                    <path d="M10.5 13.2c0-2.1 1.2-3.7 3.2-3.7 1.9 0 3.3 1.2 3.3 3.8v4.2" />
+                    <path d="M4.5 3.5h15a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-15a1 1 0 0 1 1-1Z" />
+                  </svg>
+                  <span>LinkedIn</span>
+                </a>
+                <a
+                  class="contact-icon"
+                  href="/resume.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open Ben Xu resume"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 3v12" />
+                    <path d="m7 10 5 5 5-5" />
+                    <path d="M5 20h14" />
+                  </svg>
+                  <span>Resume &darr;</span>
+                </a>
+              </div>
+            </div>
+
+            <form
+              class="contact-inbox glass-card"
+              action="/api/contact"
+              method="POST"
+              data-contact-form
+              data-ph-no-capture
+              novalidate
+            >
+              <input type="hidden" name="startedAt" value="" />
+              <label class="contact-honey" for="contact-website">Website</label>
+              <input
+                class="contact-honey"
+                id="contact-website"
+                name="website"
+                type="text"
+                tabindex="-1"
+                autocomplete="off"
+              />
+              <div class="contact-field">
+                <label for="contact-name">Name</label>
+                <input
+                  id="contact-name"
+                  name="name"
+                  type="text"
+                  autocomplete="name"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+              <div class="contact-field">
+                <label for="contact-email">Email</label>
+                <input
+                  id="contact-email"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="you@company.com"
+                  required
+                />
+              </div>
+              <div class="contact-field">
+                <label for="contact-subject">Subject</label>
+                <input
+                  id="contact-subject"
+                  name="subject"
+                  type="text"
+                  placeholder="What should we talk about?"
+                  required
+                />
+              </div>
+              <div class="contact-field contact-field-message">
+                <label for="contact-message">Message</label>
+                <textarea
+                  id="contact-message"
+                  name="message"
+                  rows="4"
+                  placeholder="Let me know how I can help"
+                  required
+                ></textarea>
+              </div>
+              <div class="contact-form-actions">
+                <button class="button button-primary" type="submit" data-contact-submit>
+                  Send message
+                  <span aria-hidden="true">-&gt;</span>
+                </button>
+                <p class="contact-form-status" data-contact-status role="status" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

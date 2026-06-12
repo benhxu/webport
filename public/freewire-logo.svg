@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Freewire Technologies">
+  <rect width="200" height="200" fill="#062427"/>
+  <path
+    fill="#24f47b"
+    d="M52 44h86v36H75c-8 0-12-4-16-11L52 44Z"
+  />
+  <path
+    fill="#24f47b"
+    d="M52 90h86v36H96v50l-44-86Z"
+  />
+</svg>

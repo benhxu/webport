@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Marlo.Today">
+  <rect width="200" height="200" fill="#ffea00"/>
+  <path
+    fill="#000"
+    d="M48 54h16v92H48V54Zm88 0h16v92h-16V54Zm-76 0h17c2 18 11 29 23 29s21-11 23-29h17c-3 28-19 45-40 45S63 82 60 54Z"
+  />
+</svg>
