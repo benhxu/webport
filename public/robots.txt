@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://webport-mu-seven.vercel.app/sitemap.xml

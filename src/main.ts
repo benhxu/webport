@@ -57,8 +57,7 @@ const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
   webgl: "waiting",
   hero_load_ms: null,
-  about_video: "deferred",
-  about_video_load_ms: null,
+  about_story: "waiting",
   max_scroll_depth: "0%",
   errors: 0,
 };
@@ -394,9 +393,6 @@ const initAboutStory = () => {
   const card = document.querySelector<HTMLElement>("[data-brainrot]");
   if (!card) return;
 
-  const video = card.querySelector<HTMLVideoElement>("[data-about-video]");
-  const audioButton = card.querySelector<HTMLButtonElement>("[data-audio-button]");
-  const audioLabel = card.querySelector<HTMLElement>("[data-audio-label]");
   const playbackButton = card.querySelector<HTMLButtonElement>("[data-playback-button]");
   const fullscreenButton = card.querySelector<HTMLButtonElement>("[data-fullscreen-button]");
   const subtitle = card.querySelector<HTMLElement>("[data-subtitle]");
@@ -405,17 +401,11 @@ const initAboutStory = () => {
   const progress = card.querySelector<HTMLElement>("[data-progress]");
   const dots = Array.from(card.querySelectorAll<HTMLElement>("[data-subtitle-dots] span"));
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const useMobileVideo = window.matchMedia("(max-width: 768px)").matches;
-  const videoSrc =
-    (useMobileVideo && video?.dataset.mobileVideoSrc) || video?.dataset.videoSrc || video?.getAttribute("src") || "";
 
   let subtitleIndex = 0;
-  let hasVideoError = false;
-  let hasRequestedVideo = false;
   let isPlaying = !prefersReducedMotion;
   let syntheticStartedAt = performance.now();
   let syntheticElapsed = 0;
-  let videoLoadStartedAt = 0;
   let isStoryVisible = false;
 
   const setSubtitle = (index: number) => {
@@ -429,19 +419,10 @@ const initAboutStory = () => {
   const setPlaying = (nextPlaying: boolean) => {
     isPlaying = nextPlaying;
     card.classList.toggle("is-paused", !isPlaying);
-    playbackButton?.setAttribute("aria-label", isPlaying ? "Pause video" : "Play video");
-  };
-
-  const getVideoDuration = () => {
-    if (video?.duration && Number.isFinite(video.duration)) return video.duration;
-    return ABOUT_FALLBACK_DURATION;
+    playbackButton?.setAttribute("aria-label", isPlaying ? "Pause animation" : "Play animation");
   };
 
   const getCurrentTime = () => {
-    if (video && !hasVideoError && Number.isFinite(video.duration)) {
-      return video.currentTime;
-    }
-
     if (isPlaying && !prefersReducedMotion) {
       return ((performance.now() - syntheticStartedAt) / 1000) % ABOUT_FALLBACK_DURATION;
     }
@@ -450,7 +431,7 @@ const initAboutStory = () => {
   };
 
   const syncProgress = () => {
-    const duration = getVideoDuration();
+    const duration = ABOUT_FALLBACK_DURATION;
     const current = getCurrentTime();
     const amount = Math.min(1, Math.max(0, current / duration));
 
@@ -467,118 +448,7 @@ const initAboutStory = () => {
     syntheticStartedAt = performance.now() - syntheticElapsed * 1000;
   };
 
-  const syncAudioButton = () => {
-    if (!video) return;
-    const isMuted = video.muted;
-    card.classList.toggle("has-audio", !isMuted);
-    if (audioLabel) audioLabel.textContent = isMuted ? "Play with audio" : "Mute audio";
-    audioButton?.setAttribute(
-      "aria-label",
-      isMuted ? "Play video with audio" : "Mute video audio",
-    );
-  };
-
-  const showFallback = () => {
-    hasVideoError = true;
-    card.classList.remove("is-video-ready");
-    updateDebugMetric("about_video", "fallback");
-    setPlaying(!prefersReducedMotion);
-    syncProgress();
-  };
-
-  const requestAboutVideo = async () => {
-    if (!video || hasRequestedVideo || !videoSrc) {
-      if (!videoSrc) showFallback();
-      return Boolean(video && !hasVideoError);
-    }
-
-    hasRequestedVideo = true;
-    videoLoadStartedAt = performance.now();
-    updateDebugMetric("about_video", "loading");
-    track("about_video_requested", {
-      source: useMobileVideo && video.dataset.mobileVideoSrc ? "mobile" : "default",
-    });
-
-    try {
-      const response = await fetch(videoSrc, { method: "HEAD" });
-      const contentType = response.headers.get("content-type") || "";
-      const isKnownVideo = contentType.startsWith("video/");
-      if ((!response.ok && response.status !== 405) || (response.ok && contentType && !isKnownVideo)) {
-        showFallback();
-        track("about_video_missing", {
-          status: response.status,
-        });
-        return false;
-      }
-    } catch {
-      // Some hosts do not allow HEAD checks. Fall through and let the video element try.
-    }
-
-    video.src = videoSrc;
-    video.load();
-
-    if (!prefersReducedMotion) {
-      video
-        .play()
-        .then(() => {
-          setPlaying(true);
-          track("about_video_started");
-        })
-        .catch(() => {
-          setPlaying(false);
-        });
-    }
-
-    return true;
-  };
-
-  if (video) {
-    video.muted = true;
-    video.playsInline = true;
-    video.preload = "none";
-
-    video.addEventListener("canplay", () => {
-      if (hasVideoError) return;
-      card.classList.add("is-video-ready");
-      const loadMs = Math.round(performance.now() - videoLoadStartedAt);
-      updateDebugMetric("about_video", "ready");
-      updateDebugMetric("about_video_load_ms", loadMs);
-      track("about_video_ready", {
-        load_ms: loadMs,
-      });
-      syncProgress();
-    });
-
-    video.addEventListener("loadedmetadata", syncProgress);
-    video.addEventListener("timeupdate", syncProgress);
-    video.addEventListener("error", showFallback);
-    video.addEventListener("play", () => setPlaying(true));
-    video.addEventListener("pause", () => setPlaying(false));
-
-    if (prefersReducedMotion) {
-      video.pause();
-      setPlaying(false);
-    }
-
-    if ("IntersectionObserver" in window) {
-      const videoObserver = new IntersectionObserver(
-        ([entry]) => {
-          if (!entry?.isIntersecting) return;
-          if (window.scrollY < 80 && entry.boundingClientRect.top >= window.innerHeight) return;
-          void requestAboutVideo();
-          videoObserver.disconnect();
-        },
-        { rootMargin: "0px 0px 80px 0px" },
-      );
-      videoObserver.observe(card);
-    } else {
-      scheduleIdle(() => {
-        void requestAboutVideo();
-      }, 1200);
-    }
-  } else {
-    showFallback();
-  }
+  updateDebugMetric("about_story", "css animation");
 
   if ("IntersectionObserver" in window) {
     const visibilityObserver = new IntersectionObserver(
@@ -595,42 +465,8 @@ const initAboutStory = () => {
     card.classList.add("is-story-visible");
   }
 
-  audioButton?.addEventListener("click", async () => {
-    if (!video || hasVideoError || !videoSrc) {
-      track("about_audio_unavailable");
-      return;
-    }
-
-    const canLoadVideo = await requestAboutVideo();
-    if (!canLoadVideo) return;
-
-    try {
-      video.muted = !video.muted;
-      syncAudioButton();
-      await video.play();
-      setPlaying(true);
-      track(video.muted ? "about_audio_muted" : "about_audio_enabled");
-    } catch {
-      video.muted = true;
-      syncAudioButton();
-    }
-  });
-
-  playbackButton?.addEventListener("click", async () => {
-    if (video && video.currentSrc && !hasVideoError) {
-      if (video.paused) {
-        try {
-          await video.play();
-          setPlaying(true);
-          track("about_video_started");
-        } catch {
-          setPlaying(false);
-        }
-      } else {
-        video.pause();
-        setPlaying(false);
-      }
-    } else if (isPlaying) {
+  playbackButton?.addEventListener("click", () => {
+    if (isPlaying) {
       pauseSyntheticClock();
       setPlaying(false);
     } else {
@@ -662,7 +498,6 @@ const initAboutStory = () => {
     syncProgress();
   }, 800);
   setSubtitle(0);
-  syncAudioButton();
   setPlaying(isPlaying);
   syncProgress();
 };
@@ -1004,10 +839,13 @@ const initContactForm = () => {
     };
 
     submitButton.disabled = true;
+    form.setAttribute("aria-busy", "true");
     setStatus("Sending…");
     track("contact_form_submitted", { status: "started" });
 
     try {
+      const controller = new AbortController();
+      const timeoutId = globalThis.setTimeout(() => controller.abort(), 12_000);
       const response = await fetch(CONTACT_FORM_ENDPOINT, {
         method: "POST",
         body: JSON.stringify(payload),
@@ -1015,7 +853,8 @@ const initContactForm = () => {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-      });
+        signal: controller.signal,
+      }).finally(() => globalThis.clearTimeout(timeoutId));
 
       const responseBody = await response.json().catch(() => null);
       if (!response.ok || responseBody?.success === false) {
@@ -1040,6 +879,7 @@ const initContactForm = () => {
       });
     } finally {
       submitButton.disabled = false;
+      form.removeAttribute("aria-busy");
     }
   });
 };
@@ -1186,7 +1026,7 @@ document.addEventListener("focusin", (event) => {
   const field = (event.target as Element | null)?.closest<HTMLInputElement | HTMLTextAreaElement>(
     ".contact-inbox input, .contact-inbox textarea",
   );
-  if (!field || field.name === "_honey" || focusedContactFields.has(field.name)) return;
+  if (!field || field.name === "website" || field.type === "hidden" || focusedContactFields.has(field.name)) return;
 
   focusedContactFields.add(field.name);
   track("contact_field_focused", {
@@ -1198,7 +1038,7 @@ document.addEventListener("change", (event) => {
   const field = (event.target as Element | null)?.closest<HTMLInputElement | HTMLTextAreaElement>(
     ".contact-inbox input, .contact-inbox textarea",
   );
-  if (!field || field.name === "_honey") return;
+  if (!field || field.name === "website" || field.type === "hidden") return;
   track("contact_field_completed", {
     field: field.name,
     has_value: Boolean(field.value.trim()),

@@ -24,10 +24,9 @@ Do not paste `RESEND_API_KEY` or `CONTACT_TO_EMAIL` into files committed to GitH
 
 ## Before launch
 
-1. Add the current resume as `public/resume.pdf`.
-2. Run `npm run build`.
-3. Test the production contact form after the Vercel environment variables are configured.
-4. Confirm PostHog receives a page view and a test interaction.
+1. Run `npm run build`.
+2. Test the production contact form after the Vercel environment variables are configured.
+3. Confirm PostHog receives a page view and a test interaction.
 
 The first Resend setup can use `onboarding@resend.dev` when the receiving address
 matches the email used for the Resend account. A verified custom domain can replace

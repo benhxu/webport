@@ -23,6 +23,10 @@ type ApiResponse = {
   json: (body: Record<string, unknown>) => void;
 };
 
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const requestCounts = new Map<string, { count: number; resetAt: number }>();
+
 const sendJson = (
   response: ApiResponse,
   body: Record<string, unknown>,
@@ -63,6 +67,28 @@ const readPayload = (body: unknown): ContactPayload | null => {
   return null;
 };
 
+const getClientIp = (headers: ApiRequest["headers"]) =>
+  (getHeader(headers, "x-forwarded-for") ?? "unknown").split(",")[0]?.trim() || "unknown";
+
+const isRateLimited = (clientIp: string) => {
+  const now = Date.now();
+  const current = requestCounts.get(clientIp);
+
+  if (!current || current.resetAt <= now) {
+    requestCounts.set(clientIp, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return false;
+  }
+
+  current.count += 1;
+  if (requestCounts.size > 1_000) {
+    for (const [ip, entry] of requestCounts) {
+      if (entry.resetAt <= now) requestCounts.delete(ip);
+    }
+  }
+
+  return current.count > RATE_LIMIT_MAX_REQUESTS;
+};
+
 export default async function handler(request: ApiRequest, response: ApiResponse) {
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
@@ -70,11 +96,24 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     return;
   }
 
+  const contentType = getHeader(request.headers, "content-type") ?? "";
+  if (!contentType.toLowerCase().startsWith("application/json")) {
+    sendJson(response, { success: false, message: "Content type must be application/json." }, 415);
+    return;
+  }
+
   const origin = getHeader(request.headers, "origin");
   const host = getHeader(request.headers, "host");
-  if (origin && host && new URL(origin).host !== host) {
-    sendJson(response, { success: false, message: "Invalid request origin." }, 403);
-    return;
+  if (origin && host) {
+    try {
+      if (new URL(origin).host !== host) {
+        sendJson(response, { success: false, message: "Invalid request origin." }, 403);
+        return;
+      }
+    } catch {
+      sendJson(response, { success: false, message: "Invalid request origin." }, 403);
+      return;
+    }
   }
 
   const contentLength = Number(getHeader(request.headers, "content-length") ?? 0);
@@ -99,6 +138,12 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   // Honeypot submissions receive a success response without sending email.
   if (website) {
     sendJson(response, { success: true });
+    return;
+  }
+
+  if (isRateLimited(getClientIp(request.headers))) {
+    response.setHeader("Retry-After", String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
+    sendJson(response, { success: false, message: "Too many requests. Please try again later." }, 429);
     return;
   }
 

@@ -4,6 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#03050a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f7f9fc" media="(prefers-color-scheme: light)" />
     <title>Ben Xu &mdash; Strategy &amp; Operations</title>
     <meta
       name="description"
@@ -15,10 +17,24 @@
       content="Operator who builds. GTM reporting, workflow automation, decision systems."
     />
     <meta property="og:type" content="website" />
-    <!-- TODO: Add the production og:url before launch. -->
-    <meta property="og:image" content="/hero-art.webp" />
-    <!-- TODO: Replace og:image with an absolute URL after the production domain is known. -->
+    <meta property="og:url" content="https://webport-mu-seven.vercel.app/" />
+    <meta
+      property="og:image"
+      content="https://webport-mu-seven.vercel.app/hero-art.webp"
+    />
+    <meta property="og:image:alt" content="Ben Xu portfolio systems artwork" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Ben Xu — Strategy &amp; Operations" />
+    <meta
+      name="twitter:description"
+      content="Operator who builds. GTM reporting, workflow automation, decision systems."
+    />
+    <meta
+      name="twitter:image"
+      content="https://webport-mu-seven.vercel.app/hero-art.webp"
+    />
+    <link rel="canonical" href="https://webport-mu-seven.vercel.app/" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
@@ -36,8 +52,6 @@
           <a href="#experience" data-nav-link>Experience</a>
           <a href="#about" data-nav-link>About</a>
           <a href="#contact" data-nav-link>Contact</a>
-          <!-- TODO: Add public/resume.pdf before deploying the resume links. -->
-          <a href="/resume.pdf" target="_blank" rel="noopener noreferrer">Resume &darr;</a>
         </nav>
         <button class="button button-primary nav-cta" type="button" data-contact>
           Let's talk
@@ -74,13 +88,13 @@
             <div class="hero-fog hero-fog-one" aria-hidden="true"></div>
             <div class="hero-fog hero-fog-two" aria-hidden="true"></div>
             <div class="hero-visual-fallback" aria-hidden="true"></div>
-            <canvas id="hero-canvas"></canvas>
+            <canvas id="hero-canvas" aria-hidden="true"></canvas>
             <div class="hero-visual-overlay" aria-hidden="true"></div>
             <button class="hero-cube-load" type="button" data-load-cube>
               Explore 3D work
               <span aria-hidden="true">-&gt;</span>
             </button>
-            <aside class="hero-face-panel glass-card" data-face-panel aria-live="polite">
+            <aside class="hero-face-panel glass-card" data-face-panel>
               <div class="face-panel-top">
                 <b data-face-index>01 / 06</b>
               </div>
@@ -103,7 +117,7 @@
         <section id="experience" class="experience-section section-observed">
           <div class="experience-shell">
             <div class="experience-header">
-              <p class="section-kicker">Experience</p>
+              <h2 class="section-kicker">Experience</h2>
             </div>
             <div class="experience-grid">
               <article id="experience-gtm" class="experience-card experience-card-featured">
@@ -311,36 +325,11 @@
                 <div class="brainrot-title-block">
                   <p class="brainrot-label">Quick Intro</p>
                   <h2>Ben in 12 seconds</h2>
-                  <p class="brainrot-subcopy">Tap to play with audio</p>
+                  <p class="brainrot-subcopy">How I work, compressed.</p>
                 </div>
-                <button
-                  class="audio-button"
-                  type="button"
-                  aria-label="Play video with audio"
-                  data-audio-button
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 9v6h4l5 4V5L8 9H4Z" />
-                    <path d="M16 8.5a5 5 0 0 1 0 7" />
-                  </svg>
-                  <span data-audio-label>Play with audio</span>
-                </button>
               </div>
 
               <div class="brainrot-frame">
-                <!-- TODO: Add public/about/subway-surfer.mp4 when the final Quick Intro video is ready. -->
-                <!-- TODO: Replace hero-art.webp with a dedicated Quick Intro video poster. -->
-                <video
-                  class="brainrot-video"
-                  data-video-src="/about/subway-surfer.mp4"
-                  poster="/hero-art.webp"
-                  autoplay
-                  muted
-                  loop
-                  playsinline
-                  preload="none"
-                  data-about-video
-                ></video>
                 <div class="brainrot-fallback" data-brainrot-fallback aria-hidden="true">
                   <div class="runner-sky"></div>
                   <div class="runner-city">
@@ -371,7 +360,7 @@
                   </div>
                 </div>
                 <div class="video-vignette" aria-hidden="true"></div>
-                <div class="subtitle-overlay" aria-live="polite" data-subtitle>
+                <div class="subtitle-overlay" data-subtitle>
                   Find the messy workflow.
                 </div>
                 <div class="brainrot-dots" aria-hidden="true" data-subtitle-dots>
@@ -387,7 +376,7 @@
                 <button
                   type="button"
                   class="control-button"
-                  aria-label="Pause video"
+                  aria-label="Pause animation"
                   data-playback-button
                 >
                   <svg class="pause-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -409,7 +398,7 @@
                 <button
                   type="button"
                   class="control-button"
-                  aria-label="Open video fullscreen"
+                  aria-label="Open visual fullscreen"
                   data-fullscreen-button
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -456,20 +445,6 @@
                   </svg>
                   <span>LinkedIn</span>
                 </a>
-                <a
-                  class="contact-icon"
-                  href="/resume.pdf"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Open Ben Xu resume"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M12 3v12" />
-                    <path d="m7 10 5 5 5-5" />
-                    <path d="M5 20h14" />
-                  </svg>
-                  <span>Resume &darr;</span>
-                </a>
               </div>
             </div>
 
@@ -482,15 +457,16 @@
               novalidate
             >
               <input type="hidden" name="startedAt" value="" />
-              <label class="contact-honey" for="contact-website">Website</label>
-              <input
-                class="contact-honey"
-                id="contact-website"
-                name="website"
-                type="text"
-                tabindex="-1"
-                autocomplete="off"
-              />
+              <div class="contact-honey" hidden aria-hidden="true" inert>
+                <label for="contact-website">Website</label>
+                <input
+                  id="contact-website"
+                  name="website"
+                  type="text"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
+              </div>
               <div class="contact-field">
                 <label for="contact-name">Name</label>
                 <input
