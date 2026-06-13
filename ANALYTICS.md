@@ -50,6 +50,7 @@ all contact-form fields are masked and the form is excluded from autocapture.
 | `engagement_heartbeat` | `visible_duration_ms`, `max_scroll_depth`, `active_section`, `scrolled` | Was the visitor still actively viewing the site? |
 | `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
 | `resource_summary` | resource, script, image, and transfer counts | How heavy was the page for the visitor? |
+| `premium_motion_ready` | `provider: gsap` | Did the visitor's device qualify for the enhanced motion layer? |
 | `web_vitals` | `lcp_ms`, `cls`, `inp_ms`, long-task values | Did visitors experience layout shift or interaction lag? |
 | `client_error` | `type` | Did the browser encounter a runtime failure? |
 

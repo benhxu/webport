@@ -34,7 +34,7 @@ const computeLowPowerMode = () => {
   const deviceMemory = "deviceMemory" in navigator
     ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
     : 0;
-  return isMobile || coarsePointer || reducedMotion || hardwareConcurrency <= 8 || (deviceMemory > 0 && deviceMemory <= 8);
+  return isMobile || coarsePointer || reducedMotion || hardwareConcurrency <= 4 || (deviceMemory > 0 && deviceMemory <= 4);
 };
 
 const debugMetrics: Record<string, DebugValue> = {
@@ -446,9 +446,11 @@ const initExperienceCardTracking = () => {
 
 initExperienceCardTracking();
 
-const initPremiumExperience = () => {
+const initPremiumExperience = async () => {
   const root = document.documentElement;
   const ambientPointer = document.querySelector<HTMLElement>(".ambient-pointer");
+  const navbar = document.querySelector<HTMLElement>(".navbar");
+  const pageProgress = document.querySelector<HTMLElement>(".page-progress span");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = window.matchMedia("(pointer: fine)").matches;
   const lowPowerMode = computeLowPowerMode();
@@ -457,14 +459,9 @@ const initPremiumExperience = () => {
   root.classList.add("is-enhanced");
   root.classList.toggle("is-low-power", lowPowerMode);
 
-  const revealTargets = Array.from(
+  const revealGroups = Array.from(
     document.querySelectorAll<HTMLElement>(
       [
-        ".hero-name",
-        ".role-kicker",
-        ".hero-title",
-        ".hero-proof",
-        ".hero-actions",
         ".experience-header",
         ".experience-card",
         ".experience-nudge",
@@ -476,17 +473,176 @@ const initPremiumExperience = () => {
     ),
   );
 
-  revealTargets.forEach((element, index) => {
-    element.classList.add("reveal-item");
-    element.style.setProperty("--reveal-order", String(index % 6));
-  });
+  if (!enhancedMotion) {
+    if ("IntersectionObserver" in window && !reducedMotion) {
+      revealGroups.forEach((element, index) => {
+        element.classList.add("reveal-item");
+        element.style.setProperty("--reveal-order", String(index % 4));
+      });
 
-  const heroRevealTargets = revealTargets.filter((element) => Boolean(element.closest(".hero")));
-  window.requestAnimationFrame(() => {
-    heroRevealTargets.forEach((element) => element.classList.add("is-visible"));
-  });
+      const revealObserver = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            (entry.target as HTMLElement).classList.add("is-visible");
+            revealObserver.unobserve(entry.target);
+          });
+        },
+        {
+          rootMargin: "0px 0px -8% 0px",
+          threshold: 0.12,
+        },
+      );
 
-  if ("IntersectionObserver" in window && !reducedMotion) {
+      revealGroups.forEach((element) => revealObserver.observe(element));
+    }
+    return;
+  }
+
+  try {
+    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+      import("gsap"),
+      import("gsap/ScrollTrigger"),
+    ]);
+    gsap.registerPlugin(ScrollTrigger);
+    root.classList.add("has-gsap");
+    track("premium_motion_ready", {
+      provider: "gsap",
+    });
+
+    const heroTargets = gsap.utils.toArray<HTMLElement>(
+      ".hero-name, .role-kicker, .hero-title, .hero-proof, .hero-actions",
+    );
+    gsap.timeline({ defaults: { ease: "power3.out" } })
+      .from(heroTargets, {
+        autoAlpha: 0,
+        y: 30,
+        duration: 0.9,
+        stagger: 0.09,
+        clearProps: "opacity,visibility,transform",
+      })
+      .from(".hero-title span", {
+        backgroundPositionX: "100%",
+        duration: 1.2,
+        ease: "power2.out",
+      }, "-=0.68");
+
+    gsap.set(revealGroups, { autoAlpha: 0, y: 34 });
+    ScrollTrigger.batch(revealGroups, {
+      start: "top 88%",
+      once: true,
+      onEnter: (elements) => {
+        gsap.fromTo(
+          elements,
+          { autoAlpha: 0, y: 34 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.82,
+            stagger: 0.08,
+            ease: "power3.out",
+            clearProps: "opacity,visibility,transform",
+          },
+        );
+      },
+    });
+
+    gsap.utils.toArray<HTMLElement>(".section-observed:not(.hero)").forEach((section) => {
+      gsap.fromTo(
+        section,
+        { "--section-shift": "-24px" },
+        {
+          "--section-shift": "24px",
+          ease: "none",
+          scrollTrigger: {
+            trigger: section,
+            start: "top bottom",
+            end: "bottom top",
+            scrub: 0.8,
+          },
+        },
+      );
+    });
+
+    if (pageProgress) {
+      gsap.set(pageProgress, { scaleX: 0, transformOrigin: "left center" });
+      ScrollTrigger.create({
+        start: 0,
+        end: "max",
+        onUpdate: (self) => {
+          gsap.set(pageProgress, { scaleX: self.progress });
+        },
+      });
+    }
+
+    if (navbar) {
+      ScrollTrigger.create({
+        start: 24,
+        end: "max",
+        onToggle: (self) => navbar.classList.toggle("is-scrolled", self.isActive),
+      });
+    }
+
+    const magneticActions = gsap.utils.toArray<HTMLElement>(
+      ".button, .contact-icon, .experience-toggle",
+    );
+    magneticActions.forEach((element) => {
+      const moveX = gsap.quickTo(element, "x", { duration: 0.35, ease: "power3.out" });
+      const moveY = gsap.quickTo(element, "y", { duration: 0.35, ease: "power3.out" });
+
+      element.addEventListener("pointermove", (event) => {
+        const rect = element.getBoundingClientRect();
+        moveX((event.clientX - rect.left - rect.width / 2) * 0.12);
+        moveY((event.clientY - rect.top - rect.height / 2) * 0.16);
+      });
+      element.addEventListener("pointerleave", () => {
+        moveX(0);
+        moveY(0);
+      });
+    });
+
+    gsap.utils.toArray<HTMLElement>(".experience-card").forEach((card) => {
+      const rotateX = gsap.quickTo(card, "rotationX", { duration: 0.45, ease: "power3.out" });
+      const rotateY = gsap.quickTo(card, "rotationY", { duration: 0.45, ease: "power3.out" });
+      const depth = gsap.quickTo(card, "z", { duration: 0.45, ease: "power3.out" });
+      gsap.set(card, { transformPerspective: 1200, transformStyle: "preserve-3d" });
+
+      card.addEventListener("pointermove", (event) => {
+        const rect = card.getBoundingClientRect();
+        const xRatio = (event.clientX - rect.left) / rect.width - 0.5;
+        const yRatio = (event.clientY - rect.top) / rect.height - 0.5;
+        rotateX(yRatio * -2.2);
+        rotateY(xRatio * 2.8);
+        depth(4);
+      });
+      card.addEventListener("pointerleave", () => {
+        rotateX(0);
+        rotateY(0);
+        depth(0);
+      });
+    });
+
+    if (ambientPointer) {
+      const pointerX = gsap.quickTo(ambientPointer, "x", { duration: 0.9, ease: "power3.out" });
+      const pointerY = gsap.quickTo(ambientPointer, "y", { duration: 0.9, ease: "power3.out" });
+      let hasTrackedPointer = false;
+
+      window.addEventListener(
+        "pointermove",
+        (event) => {
+          pointerX(event.clientX - 280);
+          pointerY(event.clientY - 280);
+          if (!hasTrackedPointer) {
+            hasTrackedPointer = true;
+            track("ambient_pointer_engaged");
+          }
+        },
+        { passive: true },
+      );
+    }
+  } catch (error) {
+    root.classList.remove("has-gsap");
+    if (DEBUG_MODE) console.warn("[portfolio:motion]", error);
     const revealObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -501,47 +657,15 @@ const initPremiumExperience = () => {
       },
     );
 
-    revealTargets
-      .filter((element) => !element.closest(".hero"))
-      .forEach((element) => revealObserver.observe(element));
-  } else {
-    revealTargets.forEach((element) => element.classList.add("is-visible"));
+    revealGroups.forEach((element, index) => {
+      element.classList.add("reveal-item");
+      element.style.setProperty("--reveal-order", String(index % 4));
+      revealObserver.observe(element);
+    });
   }
-
-  if (enhancedMotion && ambientPointer) {
-    let pointerFrame = 0;
-    let pointerX = window.innerWidth * 0.68;
-    let pointerY = window.innerHeight * 0.34;
-    let hasTrackedPointer = false;
-
-    const renderPointer = () => {
-      pointerFrame = 0;
-      ambientPointer.style.setProperty("--pointer-x", `${pointerX}px`);
-      ambientPointer.style.setProperty("--pointer-y", `${pointerY}px`);
-      root.style.setProperty("--pointer-x-ratio", String(pointerX / Math.max(window.innerWidth, 1)));
-      root.style.setProperty("--pointer-y-ratio", String(pointerY / Math.max(window.innerHeight, 1)));
-    };
-
-    window.addEventListener(
-      "pointermove",
-      (event) => {
-        pointerX = event.clientX;
-        pointerY = event.clientY;
-        if (!pointerFrame) pointerFrame = window.requestAnimationFrame(renderPointer);
-        if (!hasTrackedPointer) {
-          hasTrackedPointer = true;
-          track("ambient_pointer_engaged");
-        }
-      },
-      { passive: true },
-    );
-    renderPointer();
-
-  }
-
 };
 
-initPremiumExperience();
+void initPremiumExperience();
 
 const initPerformanceAnalytics = () => {
   if (!("PerformanceObserver" in window)) return;
