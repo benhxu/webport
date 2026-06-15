@@ -1,3 +1,5 @@
+import Lenis from "lenis";
+
 const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT ?? "/api/contact";
 const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "";
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY ?? "";
@@ -6,17 +8,11 @@ const POSTHOG_SESSION_REPLAY = import.meta.env.VITE_POSTHOG_SESSION_REPLAY === "
 const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "true";
 const sessionStartedAt = performance.now();
 const colorSchemeQuery = window.matchMedia("(prefers-color-scheme: light)");
-const sessionId = (() => {
-  const storageKey = "ben_xu_portfolio_session_id";
-  const existing = window.sessionStorage.getItem(storageKey);
-  if (existing) return existing;
-  const nextId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-  window.sessionStorage.setItem(storageKey, nextId);
-  return nextId;
-})();
+const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
+type ChannelDefinition = readonly [number: string, name: string, duration: number];
 
 declare global {
   interface Window {
@@ -26,39 +22,45 @@ declare global {
   }
 }
 
+const sessionId = (() => {
+  const storageKey = "ben_xu_portfolio_session_id";
+  const existing = window.sessionStorage.getItem(storageKey);
+  if (existing) return existing;
+  const nextId = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  window.sessionStorage.setItem(storageKey, nextId);
+  return nextId;
+})();
+
 const computeLowPowerMode = () => {
-  const isMobile = window.matchMedia("(max-width: 768px)").matches;
-  const coarsePointer = window.matchMedia("(pointer: coarse)").matches;
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const reducedMotion = reducedMotionQuery.matches;
   const hardwareConcurrency = navigator.hardwareConcurrency || 8;
   const deviceMemory = "deviceMemory" in navigator
     ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
     : 0;
-  return isMobile || coarsePointer || reducedMotion || hardwareConcurrency <= 4 || (deviceMemory > 0 && deviceMemory <= 4);
+  return isMobile || reducedMotion || hardwareConcurrency <= 4 || (deviceMemory > 0 && deviceMemory <= 4);
 };
 
 const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
-  about_story: "waiting",
-  max_scroll_depth: "0%",
+  channel: "01 SIGNAL",
+  max_channel_scroll: "0%",
   errors: 0,
 };
 let debugPanel: HTMLElement | null = null;
 
 const renderDebugPanel = () => {
   if (!DEBUG_MODE) return;
-
   if (!debugPanel) {
     debugPanel = document.createElement("aside");
     debugPanel.className = "debug-panel";
     debugPanel.setAttribute("aria-label", "Portfolio performance debug panel");
     document.body.append(debugPanel);
   }
-
   const rows = Object.entries(debugMetrics)
     .map(([key, value]) => `<span>${key}</span><b>${String(value ?? "-")}</b>`)
     .join("");
-  debugPanel.innerHTML = `<strong>Perf HUD</strong>${rows}`;
+  debugPanel.innerHTML = `<strong>Signal HUD</strong>${rows}`;
 };
 
 const updateDebugMetric = (key: string, value: DebugValue) => {
@@ -101,9 +103,7 @@ const track = (eventName: string, payload: TrackPayload = {}) => {
       pendingAnalyticsEvents.push({ eventName, payload: analyticsPayload });
     }
   } catch (error) {
-    if (DEBUG_MODE) {
-      console.warn("[portfolio:analytics]", error);
-    }
+    if (DEBUG_MODE) console.warn("[portfolio:analytics]", error);
   }
 
   if (!ANALYTICS_ENDPOINT) return;
@@ -114,7 +114,6 @@ const track = (eventName: string, payload: TrackPayload = {}) => {
       const blob = new Blob([body], { type: "application/json" });
       if (navigator.sendBeacon(ANALYTICS_ENDPOINT, blob)) return;
     }
-
     void fetch(ANALYTICS_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -122,9 +121,7 @@ const track = (eventName: string, payload: TrackPayload = {}) => {
       keepalive: true,
     });
   } catch (error) {
-    if (DEBUG_MODE) {
-      console.warn("[portfolio:analytics-endpoint]", error);
-    }
+    if (DEBUG_MODE) console.warn("[portfolio:analytics-endpoint]", error);
   }
 };
 
@@ -165,647 +162,609 @@ const initAnalyticsProvider = async () => {
   }
 };
 
+const scheduleIdle = (callback: () => void, timeout = 500) => {
+  if ("requestIdleCallback" in window) {
+    (
+      window.requestIdleCallback as (
+        idleCallback: () => void,
+        options?: { timeout: number },
+      ) => number
+    )(callback, { timeout });
+    return;
+  }
+  globalThis.setTimeout(callback, timeout);
+};
+
 colorSchemeQuery.addEventListener("change", (event) => {
   track("color_scheme_changed", {
     color_scheme: event.matches ? "light" : "dark",
   });
 });
 
-const scheduleIdle = (callback: () => void, timeout = 500) => {
-  if ("requestIdleCallback" in window) {
-    (window.requestIdleCallback as (idleCallback: () => void, options?: { timeout: number }) => number)(
-      callback,
-      { timeout },
-    );
-    return;
-  }
-
-  globalThis.setTimeout(callback, timeout);
-};
-
-const alignHashTarget = (force = false) => {
-  const hash = window.location.hash;
-  if (!hash || hash === "#home") return;
-
-  const target = document.querySelector<HTMLElement>(hash);
-  if (!target) return;
-
-  const rect = target.getBoundingClientRect();
-  const hasDrifted = rect.top > window.innerHeight * 0.35 || rect.bottom < 120;
-  if (!force && !hasDrifted) return;
-
-  const root = document.documentElement;
-  const previousScrollBehavior = root.style.scrollBehavior;
-  root.style.scrollBehavior = "auto";
-  target.scrollIntoView({
-    behavior: "auto",
-    block: "start",
-  });
-  window.requestAnimationFrame(() => {
-    root.style.scrollBehavior = previousScrollBehavior;
-  });
-};
-
-const scheduleHashAlignment = (force = false) => {
-  window.requestAnimationFrame(() => {
-    window.requestAnimationFrame(() => alignHashTarget(force));
-  });
-};
-
-let resizeAlignmentTimer = 0;
-
-window.addEventListener("hashchange", () => scheduleHashAlignment(true));
-window.addEventListener(
-  "resize",
-  () => {
-    window.clearTimeout(resizeAlignmentTimer);
-    resizeAlignmentTimer = window.setTimeout(() => scheduleHashAlignment(false), 160);
-  },
-  { passive: true },
-);
-window.visualViewport?.addEventListener(
-  "resize",
-  () => {
-    window.clearTimeout(resizeAlignmentTimer);
-    resizeAlignmentTimer = window.setTimeout(() => scheduleHashAlignment(false), 160);
-  },
-  { passive: true },
-);
-
 window.addEventListener("error", () => {
-  const nextErrorCount = Number(debugMetrics.errors || 0) + 1;
-  updateDebugMetric("errors", nextErrorCount);
-  track("client_error", {
-    type: "error",
-  });
+  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
+  track("client_error", { type: "error" });
 });
 
 window.addEventListener("unhandledrejection", () => {
-  const nextErrorCount = Number(debugMetrics.errors || 0) + 1;
-  updateDebugMetric("errors", nextErrorCount);
-  track("client_error", {
-    type: "unhandledrejection",
-  });
+  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
+  track("client_error", { type: "unhandledrejection" });
 });
 
-const ABOUT_SUBTITLES = [
-  "Find the messy workflow.",
-  "Build the operating system.",
-  "Automate the repetitive parts.",
-  "Make the work visible.",
-  "Move faster with less chaos.",
-] as const;
+const screen = document.querySelector<HTMLElement>("#screen");
+const flash = document.querySelector<HTMLElement>("#flash");
+const fill = document.querySelector<HTMLElement>("#fill");
+const chNum = document.querySelector<HTMLElement>("#chNum");
+const chName = document.querySelector<HTMLElement>("#chName");
+const clockElement = document.querySelector<HTMLElement>("#clock");
+const channelKnob = document.querySelector<HTMLElement>("#channelKnob");
+const signalLock = document.querySelector<HTMLElement>("#signalLock");
+const hero = document.querySelector<HTMLElement>("#hero");
+const channelElements = Array.from(document.querySelectorAll<HTMLElement>(".channel"));
+const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".nav [data-goto]"));
+const gotoControls = Array.from(document.querySelectorAll<HTMLElement>("[data-goto]"));
 
-const ABOUT_FALLBACK_DURATION = 12;
+if (!screen || !flash || !fill || !chNum || !chName || !hero || !signalLock) {
+  throw new Error("Required TV interface elements are missing.");
+}
 
-const formatTime = (seconds: number) => {
-  if (!Number.isFinite(seconds)) return "00:00";
-  const minutes = Math.floor(seconds / 60);
-  const remainingSeconds = Math.floor(seconds % 60);
-  return `${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+const channels = [
+  ["01", "SIGNAL", 9500],
+  ["02", "PROFILE", 10000],
+  ["03", "WORK RECORD", 12000],
+  ["04", "OPEN LINE", Number.POSITIVE_INFINITY],
+] as const satisfies readonly ChannelDefinition[];
+
+const hashChannels: Record<string, number> = {
+  "#home": 0,
+  "#signal": 0,
+  "#about": 1,
+  "#profile": 1,
+  "#experience": 2,
+  "#work-record": 2,
+  "#contact": 3,
+  "#open-line": 3,
 };
 
-const initAboutStory = () => {
-  const card = document.querySelector<HTMLElement>("[data-brainrot]");
-  if (!card) return;
+let currentChannel = hashChannels[window.location.hash] ?? 0;
+let autoplayEnabled = currentChannel === 0;
+let progressTimer = 0;
+let progressRaf = 0;
+let progressStartedAt = 0;
+let switching = false;
+let channelLenis: Lenis | null = null;
+let channelDwellStartedAt = performance.now();
+let lastWheelAt = 0;
+let touchStartX = 0;
+let touchStartY = 0;
+let activeChannelMaxScroll = 0;
+let activeChannelHasScrolled = false;
+let assemblyStarted = false;
+const trackedChannelScrollMilestones = new Set<number>();
 
-  const playbackButton = card.querySelector<HTMLButtonElement>("[data-playback-button]");
-  const fullscreenButton = card.querySelector<HTMLButtonElement>("[data-fullscreen-button]");
-  const subtitle = card.querySelector<HTMLElement>("[data-subtitle]");
-  const currentTimeLabel = card.querySelector<HTMLElement>("[data-current-time]");
-  const durationLabel = card.querySelector<HTMLElement>("[data-duration]");
-  const progress = card.querySelector<HTMLElement>("[data-progress]");
-  const dots = Array.from(card.querySelectorAll<HTMLElement>("[data-subtitle-dots] span"));
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const formatClockPart = (value: number) => String(value).padStart(2, "0");
 
-  let subtitleIndex = 0;
-  let isPlaying = !prefersReducedMotion;
-  let syntheticStartedAt = performance.now();
-  let syntheticElapsed = 0;
-  let isStoryVisible = false;
+const updateClock = () => {
+  if (!clockElement) return;
+  const date = new Date();
+  clockElement.textContent = `${formatClockPart(date.getHours())}:${formatClockPart(date.getMinutes())}:${formatClockPart(date.getSeconds())}`;
+};
 
-  const setSubtitle = (index: number) => {
-    subtitleIndex = index % ABOUT_SUBTITLES.length;
-    if (subtitle) subtitle.textContent = ABOUT_SUBTITLES[subtitleIndex];
-    dots.forEach((dot, dotIndex) => {
-      dot.classList.toggle("is-active", dotIndex === subtitleIndex);
-    });
-  };
+updateClock();
+window.setInterval(updateClock, 1000);
 
-  const setPlaying = (nextPlaying: boolean) => {
-    isPlaying = nextPlaying;
-    card.classList.toggle("is-paused", !isPlaying);
-    playbackButton?.setAttribute("aria-label", isPlaying ? "Pause animation" : "Play animation");
-  };
+const flashStatic = () =>
+  new Promise<void>((resolve) => {
+    const frames = [0.22, 0.9, 0.08, 0.7, 0.02, 0.35, 0];
+    let index = 0;
+    const frame = () => {
+      flash.style.opacity = String(frames[index++] ?? 0);
+      if (index < frames.length) globalThis.setTimeout(frame, 45);
+      else resolve();
+    };
+    frame();
+  });
 
-  const getCurrentTime = () => {
-    if (isPlaying && !prefersReducedMotion) {
-      return ((performance.now() - syntheticStartedAt) / 1000) % ABOUT_FALLBACK_DURATION;
-    }
+const stopProgress = () => {
+  globalThis.clearTimeout(progressTimer);
+  window.cancelAnimationFrame(progressRaf);
+  fill.style.width = "0%";
+};
 
-    return syntheticElapsed;
-  };
-
-  const syncProgress = () => {
-    const duration = ABOUT_FALLBACK_DURATION;
-    const current = getCurrentTime();
-    const amount = Math.min(1, Math.max(0, current / duration));
-
-    if (currentTimeLabel) currentTimeLabel.textContent = formatTime(current);
-    if (durationLabel) durationLabel.textContent = formatTime(duration);
-    progress?.style.setProperty("--progress", String(amount));
-  };
-
-  const pauseSyntheticClock = () => {
-    syntheticElapsed = getCurrentTime();
-  };
-
-  const resumeSyntheticClock = () => {
-    syntheticStartedAt = performance.now() - syntheticElapsed * 1000;
-  };
-
-  updateDebugMetric("about_story", "css animation");
-
-  if ("IntersectionObserver" in window) {
-    const visibilityObserver = new IntersectionObserver(
-      ([entry]) => {
-        isStoryVisible = Boolean(entry?.isIntersecting);
-        card.classList.toggle("is-story-visible", isStoryVisible);
-        if (isStoryVisible) syncProgress();
-      },
-      { threshold: 0.08 },
-    );
-    visibilityObserver.observe(card);
-  } else {
-    isStoryVisible = true;
-    card.classList.add("is-story-visible");
+const startProgress = () => {
+  stopProgress();
+  if (!autoplayEnabled) {
+    fill.style.width = "100%";
+    return;
   }
-
-  playbackButton?.addEventListener("click", () => {
-    if (isPlaying) {
-      pauseSyntheticClock();
-      setPlaying(false);
-    } else {
-      resumeSyntheticClock();
-      setPlaying(true);
-    }
-
-    track("about_playback_toggled", {
-      playing: isPlaying,
-    });
-    syncProgress();
-  });
-
-  fullscreenButton?.addEventListener("click", () => {
-    const frame = card.querySelector<HTMLElement>(".brainrot-frame");
-    frame?.requestFullscreen?.();
-    track("about_fullscreen_clicked");
-  });
-
-  if (!prefersReducedMotion) {
-    window.setInterval(() => {
-      if (!isPlaying || !isStoryVisible || document.visibilityState !== "visible") return;
-      setSubtitle(subtitleIndex + 1);
-    }, 3200);
-  }
-
-  window.setInterval(() => {
-    if (!isStoryVisible || document.visibilityState !== "visible") return;
-    syncProgress();
-  }, 800);
-  setSubtitle(0);
-  setPlaying(isPlaying);
-  syncProgress();
-};
-
-initAboutStory();
-
-const initExperienceToggles = () => {
-  const cards = Array.from(document.querySelectorAll<HTMLElement>(".experience-card"));
-  if (!cards.length) return;
-
-  const setExpanded = (card: HTMLElement, expanded: boolean) => {
-    card.classList.toggle("is-expanded", expanded);
-    const toggle = card.querySelector<HTMLButtonElement>(".experience-toggle");
-    const expandContent = card.querySelector<HTMLElement>("[data-expand-content]");
-    toggle?.setAttribute("aria-expanded", String(expanded));
-    if (expandContent) expandContent.hidden = !expanded;
-    const label = Array.from(toggle?.childNodes ?? []).find((node) => node.nodeType === Node.TEXT_NODE);
-    if (label) label.textContent = expanded ? "Show less " : "Read more ";
-  };
-
-  cards.forEach((card) => {
-    setExpanded(card, false);
-
-    const toggle = card.querySelector<HTMLButtonElement>(".experience-toggle");
-    toggle?.addEventListener("click", () => {
-      const nextExpanded = !card.classList.contains("is-expanded");
-      setExpanded(card, nextExpanded);
-
-      track("experience_card_toggled", {
-        card: card.id || "unknown",
-        expanded: nextExpanded,
-      });
-      if (nextExpanded) {
-        track("experience_expanded", {
-          company: card.id === "experience-gtm" ? "marlo" : "freewire",
-        });
-      }
-    });
-  });
-};
-
-initExperienceToggles();
-
-const initExperienceCardTracking = () => {
-  const cards = Array.from(document.querySelectorAll<HTMLElement>(".experience-card"));
-  if (!cards.length || !("IntersectionObserver" in window)) return;
-
-  const seenCards = new Set<string>();
-  const cardObserver = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const card = entry.target as HTMLElement;
-        const cardId = card.id || "unknown";
-        if (seenCards.has(cardId)) return;
-        seenCards.add(cardId);
-        track("experience_card_viewed", {
-          card: cardId,
-        });
-        cardObserver.unobserve(card);
-      });
-    },
-    {
-      threshold: 0.45,
-    },
-  );
-
-  cards.forEach((card) => cardObserver.observe(card));
-};
-
-initExperienceCardTracking();
-
-const initPremiumExperience = async () => {
-  const root = document.documentElement;
-  const ambientPointer = document.querySelector<HTMLElement>(".ambient-pointer");
-  const navbar = document.querySelector<HTMLElement>(".navbar");
-  const pageProgress = document.querySelector<HTMLElement>(".page-progress span");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const finePointer = window.matchMedia("(pointer: fine)").matches;
-  const lowPowerMode = computeLowPowerMode();
-  const enhancedMotion = finePointer && !reducedMotion && !lowPowerMode;
-
-  root.classList.add("is-enhanced");
-  root.classList.toggle("is-low-power", lowPowerMode);
-
-  const revealGroups = Array.from(
-    document.querySelectorAll<HTMLElement>(
-      [
-        ".experience-header",
-        ".experience-card",
-        ".experience-nudge",
-        ".about-copy > *",
-        ".brainrot-card",
-        ".contact-copy > *",
-        ".contact-inbox",
-      ].join(","),
-    ),
-  );
-
-  if (!enhancedMotion) {
-    if ("IntersectionObserver" in window && !reducedMotion) {
-      revealGroups.forEach((element, index) => {
-        element.classList.add("reveal-item");
-        element.style.setProperty("--reveal-order", String(index % 4));
-      });
-
-      const revealObserver = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (!entry.isIntersecting) return;
-            (entry.target as HTMLElement).classList.add("is-visible");
-            revealObserver.unobserve(entry.target);
-          });
-        },
-        {
-          rootMargin: "0px 0px -8% 0px",
-          threshold: 0.12,
-        },
-      );
-
-      revealGroups.forEach((element) => revealObserver.observe(element));
-    }
+  const duration = channels[currentChannel]?.[2] ?? Number.POSITIVE_INFINITY;
+  if (!Number.isFinite(duration)) {
+    fill.style.width = "100%";
     return;
   }
 
-  try {
-    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
-      import("gsap"),
-      import("gsap/ScrollTrigger"),
-    ]);
-    gsap.registerPlugin(ScrollTrigger);
-    root.classList.add("has-gsap");
-    track("premium_motion_ready", {
-      provider: "gsap",
-    });
-
-    const heroTargets = gsap.utils.toArray<HTMLElement>(
-      ".hero-name, .role-kicker, .hero-title, .hero-proof, .hero-actions",
-    );
-    gsap.timeline({ defaults: { ease: "power3.out" } })
-      .from(heroTargets, {
-        autoAlpha: 0,
-        y: 30,
-        duration: 0.9,
-        stagger: 0.09,
-        clearProps: "opacity,visibility,transform",
-      })
-      .from(".hero-title span", {
-        backgroundPositionX: "100%",
-        duration: 1.2,
-        ease: "power2.out",
-      }, "-=0.68");
-
-    gsap.set(revealGroups, { autoAlpha: 0, y: 34 });
-    ScrollTrigger.batch(revealGroups, {
-      start: "top 88%",
-      once: true,
-      onEnter: (elements) => {
-        gsap.fromTo(
-          elements,
-          { autoAlpha: 0, y: 34 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.82,
-            stagger: 0.08,
-            ease: "power3.out",
-            clearProps: "opacity,visibility,transform",
-          },
-        );
-      },
-    });
-
-    gsap.utils.toArray<HTMLElement>(".section-observed:not(.hero)").forEach((section) => {
-      gsap.fromTo(
-        section,
-        { "--section-shift": "-24px" },
-        {
-          "--section-shift": "24px",
-          ease: "none",
-          scrollTrigger: {
-            trigger: section,
-            start: "top bottom",
-            end: "bottom top",
-            scrub: 0.8,
-          },
-        },
-      );
-    });
-
-    if (pageProgress) {
-      gsap.set(pageProgress, { scaleX: 0, transformOrigin: "left center" });
-      ScrollTrigger.create({
-        start: 0,
-        end: "max",
-        onUpdate: (self) => {
-          gsap.set(pageProgress, { scaleX: self.progress });
-        },
-      });
-    }
-
-    if (navbar) {
-      ScrollTrigger.create({
-        start: 24,
-        end: "max",
-        onToggle: (self) => navbar.classList.toggle("is-scrolled", self.isActive),
-      });
-    }
-
-    const magneticActions = gsap.utils.toArray<HTMLElement>(
-      ".button, .contact-icon, .experience-toggle",
-    );
-    magneticActions.forEach((element) => {
-      const moveX = gsap.quickTo(element, "x", { duration: 0.35, ease: "power3.out" });
-      const moveY = gsap.quickTo(element, "y", { duration: 0.35, ease: "power3.out" });
-
-      element.addEventListener("pointermove", (event) => {
-        const rect = element.getBoundingClientRect();
-        moveX((event.clientX - rect.left - rect.width / 2) * 0.12);
-        moveY((event.clientY - rect.top - rect.height / 2) * 0.16);
-      });
-      element.addEventListener("pointerleave", () => {
-        moveX(0);
-        moveY(0);
-      });
-    });
-
-    gsap.utils.toArray<HTMLElement>(".experience-card").forEach((card) => {
-      const rotateX = gsap.quickTo(card, "rotationX", { duration: 0.45, ease: "power3.out" });
-      const rotateY = gsap.quickTo(card, "rotationY", { duration: 0.45, ease: "power3.out" });
-      const depth = gsap.quickTo(card, "z", { duration: 0.45, ease: "power3.out" });
-      gsap.set(card, { transformPerspective: 1200, transformStyle: "preserve-3d" });
-
-      card.addEventListener("pointermove", (event) => {
-        const rect = card.getBoundingClientRect();
-        const xRatio = (event.clientX - rect.left) / rect.width - 0.5;
-        const yRatio = (event.clientY - rect.top) / rect.height - 0.5;
-        rotateX(yRatio * -2.2);
-        rotateY(xRatio * 2.8);
-        depth(4);
-      });
-      card.addEventListener("pointerleave", () => {
-        rotateX(0);
-        rotateY(0);
-        depth(0);
-      });
-    });
-
-    if (ambientPointer) {
-      const pointerX = gsap.quickTo(ambientPointer, "x", { duration: 0.9, ease: "power3.out" });
-      const pointerY = gsap.quickTo(ambientPointer, "y", { duration: 0.9, ease: "power3.out" });
-      let hasTrackedPointer = false;
-
-      window.addEventListener(
-        "pointermove",
-        (event) => {
-          pointerX(event.clientX - 280);
-          pointerY(event.clientY - 280);
-          if (!hasTrackedPointer) {
-            hasTrackedPointer = true;
-            track("ambient_pointer_engaged");
-          }
-        },
-        { passive: true },
-      );
-    }
-  } catch (error) {
-    root.classList.remove("has-gsap");
-    if (DEBUG_MODE) console.warn("[portfolio:motion]", error);
-    const revealObserver = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          (entry.target as HTMLElement).classList.add("is-visible");
-          revealObserver.unobserve(entry.target);
-        });
-      },
-      {
-        rootMargin: "0px 0px -8% 0px",
-        threshold: 0.12,
-      },
-    );
-
-    revealGroups.forEach((element, index) => {
-      element.classList.add("reveal-item");
-      element.style.setProperty("--reveal-order", String(index % 4));
-      revealObserver.observe(element);
-    });
-  }
+  progressStartedAt = performance.now();
+  const step = (time: number) => {
+    const progress = Math.min((time - progressStartedAt) / duration, 1);
+    fill.style.width = `${progress * 100}%`;
+    if (progress < 1) progressRaf = window.requestAnimationFrame(step);
+  };
+  progressRaf = window.requestAnimationFrame(step);
+  progressTimer = globalThis.setTimeout(() => {
+    void go(Math.min(currentChannel + 1, channels.length - 1), "auto");
+  }, duration);
 };
 
-void initPremiumExperience();
+const getActiveChannelElement = () => channelElements[currentChannel] ?? null;
 
-const initPerformanceAnalytics = () => {
-  if (!("PerformanceObserver" in window)) return;
-
-  let largestContentfulPaint = 0;
-  let cumulativeLayoutShift = 0;
-  let interactionLatency = 0;
-  let longTaskCount = 0;
-  let longTaskDuration = 0;
-
-  const supported = PerformanceObserver.supportedEntryTypes ?? [];
-
-  if (supported.includes("largest-contentful-paint")) {
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        largestContentfulPaint = Math.max(largestContentfulPaint, entry.startTime);
-      });
-    });
-    observer.observe({ type: "largest-contentful-paint", buffered: true });
-  }
-
-  if (supported.includes("layout-shift")) {
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        const shift = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
-        if (!shift.hadRecentInput) cumulativeLayoutShift += shift.value ?? 0;
-      });
-    });
-    observer.observe({ type: "layout-shift", buffered: true });
-  }
-
-  if (supported.includes("event")) {
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        interactionLatency = Math.max(interactionLatency, entry.duration);
-      });
-    });
-    observer.observe({ type: "event", buffered: true, durationThreshold: 40 } as PerformanceObserverInit);
-  }
-
-  if (supported.includes("longtask")) {
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        longTaskCount += 1;
-        longTaskDuration += entry.duration;
-      });
-    });
-    observer.observe({ type: "longtask", buffered: true });
-  }
-
-  window.addEventListener(
-    "pagehide",
-    () => {
-      track("web_vitals", {
-        lcp_ms: Math.round(largestContentfulPaint),
-        cls: Number(cumulativeLayoutShift.toFixed(4)),
-        inp_ms: Math.round(interactionLatency),
-        long_task_count: longTaskCount,
-        long_task_duration_ms: Math.round(longTaskDuration),
-      });
-    },
-    { once: true },
-  );
+const destroyChannelScroller = () => {
+  channelLenis?.destroy();
+  channelLenis = null;
 };
 
-initPerformanceAnalytics();
+const syncChannelScroller = () => {
+  destroyChannelScroller();
+  const channel = getActiveChannelElement();
+  const content = channel?.querySelector<HTMLElement>(".inner, .hero");
+  if (!channel || !content || channel.scrollHeight <= channel.clientHeight + 2) return;
 
-let maxScrollDepth = 0;
-let scrollDepthQueued = false;
-let hasScrolled = false;
-const scrollDepthMilestones = [25, 50, 75, 100];
-const trackedScrollDepths = new Set<number>();
-
-const updateScrollDepth = () => {
-  scrollDepthQueued = false;
-  const totalHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight);
-  const depth = totalHeight <= window.innerHeight
-    ? 100
-    : Math.min(100, Math.round(((window.scrollY + window.innerHeight) / totalHeight) * 100));
-
-  if (depth <= maxScrollDepth) return;
-
-  maxScrollDepth = depth;
-  updateDebugMetric("max_scroll_depth", `${maxScrollDepth}%`);
-
-  scrollDepthMilestones.forEach((milestone) => {
-    if (maxScrollDepth < milestone || trackedScrollDepths.has(milestone)) return;
-    trackedScrollDepths.add(milestone);
-    track("scroll_depth", {
-      depth_percent: milestone,
-    });
-    track("scroll_milestone", {
-      depth: milestone,
-    });
+  channelLenis = new Lenis({
+    wrapper: channel,
+    content,
+    duration: 1.1,
+    smoothWheel: true,
+    syncTouch: false,
   });
 };
 
-window.addEventListener(
-  "scroll",
-  () => {
-    if (!hasScrolled && window.scrollY > 4) {
-      hasScrolled = true;
-      track("scroll_started");
+const lenisFrame = (time: number) => {
+  channelLenis?.raf(time);
+  window.requestAnimationFrame(lenisFrame);
+};
+window.requestAnimationFrame(lenisFrame);
+
+const flushChannelDwell = (reason: string) => {
+  const durationMs = Math.round(performance.now() - channelDwellStartedAt);
+  track("channel_dwell", {
+    channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+    name: channels[currentChannel]?.[1] ?? "UNKNOWN",
+    duration_ms: durationMs,
+    max_scroll_depth: activeChannelMaxScroll,
+    scrolled: activeChannelHasScrolled,
+    reason,
+  });
+  channelDwellStartedAt = performance.now();
+  activeChannelMaxScroll = 0;
+  activeChannelHasScrolled = false;
+  trackedChannelScrollMilestones.clear();
+  updateDebugMetric("max_channel_scroll", "0%");
+};
+
+const updateHistory = (index: number) => {
+  const hashes = ["#home", "#about", "#experience", "#contact"];
+  const nextHash = hashes[index] ?? "#home";
+  if (window.location.hash === nextHash) return;
+  window.history.replaceState(null, "", nextHash);
+};
+
+const setChannelState = (index: number) => {
+  currentChannel = index;
+  channelElements.forEach((channel, channelIndex) => {
+    channel.hidden = channelIndex !== currentChannel;
+    channel.setAttribute("aria-hidden", String(channelIndex !== currentChannel));
+  });
+  navButtons.forEach((button, buttonIndex) => {
+    const active = buttonIndex === currentChannel;
+    button.classList.toggle("active", active);
+    if (active) button.setAttribute("aria-current", "page");
+    else button.removeAttribute("aria-current");
+  });
+
+  const definition = channels[currentChannel];
+  chNum.textContent = definition?.[0] ?? "01";
+  chName.textContent = definition?.[1] ?? "SIGNAL";
+  if (channelKnob) channelKnob.style.transform = `rotate(${currentChannel * 42 + 18}deg)`;
+  getActiveChannelElement()?.scrollTo({ top: 0, behavior: "auto" });
+  updateHistory(currentChannel);
+  updateDebugMetric("channel", `${definition?.[0] ?? ""} ${definition?.[1] ?? ""}`);
+  window.requestAnimationFrame(syncChannelScroller);
+};
+
+const go = async (
+  index: number,
+  source: "nav" | "hero_cta" | "wheel" | "touch" | "keyboard" | "auto" | "hash" = "nav",
+) => {
+  if (switching || index === currentChannel || index < 0 || index >= channels.length) return;
+  if (!["auto", "hash"].includes(source)) autoplayEnabled = false;
+  switching = true;
+  stopProgress();
+  flushChannelDwell("channel_exit");
+  await flashStatic();
+  setChannelState(index);
+  if (index === 0 && !assemblyStarted) {
+    globalThis.setTimeout(setupAssembly, 450);
+  }
+  channelDwellStartedAt = performance.now();
+  startProgress();
+  track("channel_viewed", {
+    channel: channels[index]?.[0] ?? String(index),
+    name: channels[index]?.[1] ?? "",
+    source,
+  });
+  switching = false;
+};
+
+setChannelState(currentChannel);
+startProgress();
+track("channel_viewed", {
+  channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+  name: channels[currentChannel]?.[1] ?? "",
+  source: window.location.hash ? "hash" : "nav",
+});
+
+gotoControls.forEach((control) => {
+  control.addEventListener("click", () => {
+    const index = Number(control.dataset.goto);
+    const source = control.closest(".hero") ? "hero_cta" : "nav";
+    autoplayEnabled = false;
+    if (index === currentChannel) {
+      stopProgress();
+      fill.style.width = "100%";
     }
-    if (scrollDepthQueued) return;
-    scrollDepthQueued = true;
-    window.requestAnimationFrame(updateScrollDepth);
+    if (source === "hero_cta") {
+      track("cta_clicked", {
+        location: "hero",
+        target_channel: index,
+      });
+    }
+    void go(index, source);
+  });
+});
+
+window.addEventListener("hashchange", () => {
+  const targetChannel = hashChannels[window.location.hash];
+  if (targetChannel === undefined) return;
+  void go(targetChannel, "hash");
+});
+
+const canScrollInDirection = (deltaY: number) => {
+  const channel = getActiveChannelElement();
+  if (!channel || channel.scrollHeight <= channel.clientHeight + 2) return false;
+  if (deltaY > 0) {
+    return channel.scrollTop + channel.clientHeight < channel.scrollHeight - 2;
+  }
+  return channel.scrollTop > 2;
+};
+
+window.addEventListener(
+  "wheel",
+  (event) => {
+    if (canScrollInDirection(event.deltaY)) return;
+    const now = Date.now();
+    if (now - lastWheelAt < 650) return;
+    lastWheelAt = now;
+    autoplayEnabled = false;
+    const next = event.deltaY > 0
+      ? Math.min(currentChannel + 1, channels.length - 1)
+      : Math.max(currentChannel - 1, 0);
+    void go(next, "wheel");
   },
   { passive: true },
 );
 
-const scrollToContactForm = (location: "nav" | "hero" | "midpage") => {
-  track("contact_clicked", { location });
-  track("cta_clicked", { location });
+window.addEventListener(
+  "touchstart",
+  (event) => {
+    touchStartX = event.touches[0]?.clientX ?? 0;
+    touchStartY = event.touches[0]?.clientY ?? 0;
+  },
+  { passive: true },
+);
 
-  const contactSection = document.querySelector<HTMLElement>("#contact");
-  const messageField = document.querySelector<HTMLTextAreaElement>("#contact-message");
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+window.addEventListener(
+  "touchend",
+  (event) => {
+    const endX = event.changedTouches[0]?.clientX ?? touchStartX;
+    const endY = event.changedTouches[0]?.clientY ?? touchStartY;
+    const deltaX = touchStartX - endX;
+    const deltaY = touchStartY - endY;
+    const horizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 45;
+    const verticalAtBoundary = Math.abs(deltaY) > 60 && !canScrollInDirection(deltaY);
+    if (!horizontalSwipe && !verticalAtBoundary) return;
 
-  contactSection?.scrollIntoView({
-    behavior: reducedMotion ? "auto" : "smooth",
-    block: "start",
-  });
+    autoplayEnabled = false;
+    const delta = horizontalSwipe ? deltaX : deltaY;
+    const next = delta > 0
+      ? Math.min(currentChannel + 1, channels.length - 1)
+      : Math.max(currentChannel - 1, 0);
+    void go(next, "touch");
+  },
+  { passive: true },
+);
 
-  globalThis.setTimeout(() => {
-    messageField?.focus({ preventScroll: true });
-  }, reducedMotion ? 0 : 420);
+window.addEventListener("keydown", (event) => {
+  const target = event.target as HTMLElement | null;
+  if (target?.matches("input, textarea, button, a")) return;
+  if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(event.key)) {
+    autoplayEnabled = false;
+  }
+  if (event.key === "ArrowRight") void go(Math.min(currentChannel + 1, 3), "keyboard");
+  if (event.key === "ArrowLeft") void go(Math.max(currentChannel - 1, 0), "keyboard");
+  if (event.key === "ArrowDown" && !canScrollInDirection(1)) {
+    void go(Math.min(currentChannel + 1, 3), "keyboard");
+  }
+  if (event.key === "ArrowUp" && !canScrollInDirection(-1)) {
+    void go(Math.max(currentChannel - 1, 0), "keyboard");
+  }
+});
+
+channelElements.forEach((channel, index) => {
+  let scrollQueued = false;
+  channel.addEventListener(
+    "scroll",
+    () => {
+      if (index !== currentChannel || scrollQueued) return;
+      scrollQueued = true;
+      window.requestAnimationFrame(() => {
+        scrollQueued = false;
+        const scrollable = channel.scrollHeight - channel.clientHeight;
+        if (scrollable <= 0) return;
+        const depth = Math.min(100, Math.round((channel.scrollTop / scrollable) * 100));
+        if (!activeChannelHasScrolled && channel.scrollTop > 4) {
+          activeChannelHasScrolled = true;
+          autoplayEnabled = false;
+          stopProgress();
+          fill.style.width = "100%";
+          track("channel_scroll_started", {
+            channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+          });
+        }
+        if (depth > activeChannelMaxScroll) {
+          activeChannelMaxScroll = depth;
+          updateDebugMetric("max_channel_scroll", `${depth}%`);
+          [25, 50, 75, 100].forEach((milestone) => {
+            if (depth < milestone || trackedChannelScrollMilestones.has(milestone)) return;
+            trackedChannelScrollMilestones.add(milestone);
+            track("channel_scroll_depth", {
+              channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+              depth_percent: milestone,
+            });
+          });
+        }
+      });
+    },
+    { passive: true },
+  );
+});
+
+let resizeTimer = 0;
+window.addEventListener(
+  "resize",
+  () => {
+    globalThis.clearTimeout(resizeTimer);
+    resizeTimer = globalThis.setTimeout(syncChannelScroller, 160);
+  },
+  { passive: true },
+);
+
+type AssemblyParticle = {
+  element: HTMLElement;
+  targetX: number;
+  targetY: number;
+  baseX: number;
+  baseY: number;
+  angle: number;
+  spin: number;
+  velocityX: number;
+  velocityY: number;
+  phase: number;
+  amplitude: number;
+  snapX?: number;
+  snapY?: number;
+  snapAngle?: number;
 };
 
-const contactButtons = document.querySelectorAll<HTMLElement>("[data-contact]");
+type ChaosParticle = {
+  element: HTMLElement;
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+  rotation: number;
+  spin: number;
+};
 
-contactButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const location = button.closest(".navbar")
-      ? "nav"
-      : button.closest(".hero")
-        ? "hero"
-        : "midpage";
-    scrollToContactForm(location);
+const assemblyPieces = Array.from(document.querySelectorAll<HTMLElement>(".assemble-piece"));
+const chaosWords = [
+  "manual monday",
+  "copy paste",
+  "who owns this?",
+  "version_final_3",
+  "missing owner",
+  "update tracker",
+  "RMA pending",
+  "ask team",
+  "no source",
+  "out of sync",
+  "spreadsheet tab 12",
+  "TBD",
+  "N/A",
+  "handoff broke",
+];
+const DRIFT_MS = 1800;
+const ASSEMBLE_MS = 2200;
+let assemblyParticles: AssemblyParticle[] = [];
+let chaosParticles: ChaosParticle[] = [];
+let animationStartedAt = 0;
+let assemblyRaf = 0;
+let chaosRaf = 0;
+
+const randomBetween = (minimum: number, maximum: number) =>
+  minimum + Math.random() * Math.max(0, maximum - minimum);
+
+const removeChaos = () => {
+  window.cancelAnimationFrame(chaosRaf);
+  chaosParticles.forEach((particle) => particle.element.remove());
+  chaosParticles = [];
+};
+
+const spawnMess = () => {
+  removeChaos();
+  if (reducedMotionQuery.matches || currentChannel !== 0) return;
+
+  const count = computeLowPowerMode() ? 12 : 24;
+  for (let index = 0; index < count; index += 1) {
+    const element = document.createElement("span");
+    element.className = `chaos-word${Math.random() > 0.68 ? " gold" : ""}`;
+    element.textContent = chaosWords[Math.floor(Math.random() * chaosWords.length)] ?? "out of sync";
+    screen.append(element);
+    chaosParticles.push({
+      element,
+      x: randomBetween(20, Math.max(21, screen.clientWidth - 160)),
+      y: randomBetween(25, Math.max(26, screen.clientHeight - 40)),
+      velocityX: randomBetween(-0.22, 0.22),
+      velocityY: randomBetween(-0.18, 0.18),
+      rotation: randomBetween(-12, 12),
+      spin: randomBetween(-0.08, 0.08),
+    });
+  }
+
+  const animateChaos = () => {
+    if (document.visibilityState === "visible" && currentChannel === 0) {
+      chaosParticles.forEach((particle) => {
+        particle.x += particle.velocityX;
+        particle.y += particle.velocityY;
+        particle.rotation += particle.spin;
+        if (particle.x < 0 || particle.x > screen.clientWidth - 140) particle.velocityX *= -1;
+        if (particle.y < 0 || particle.y > screen.clientHeight - 28) particle.velocityY *= -1;
+        particle.element.style.transform =
+          `translate3d(${particle.x}px, ${particle.y}px, 0) rotate(${particle.rotation}deg)`;
+      });
+    }
+    chaosRaf = window.requestAnimationFrame(animateChaos);
+  };
+  chaosRaf = window.requestAnimationFrame(animateChaos);
+};
+
+const settleAssembly = () => {
+  window.cancelAnimationFrame(assemblyRaf);
+  hero.classList.remove("assembling");
+  hero.classList.add("assembled");
+  assemblyPieces.forEach((element) => {
+    element.style.transform = "";
+    element.style.opacity = "";
+    element.style.filter = "";
   });
+  signalLock.textContent = "signal locked · ready";
+  removeChaos();
+  track("hero_assembly_completed", {
+    duration_ms: reducedMotionQuery.matches ? 0 : DRIFT_MS + ASSEMBLE_MS,
+  });
+};
+
+const easeOutCubic = (value: number) => 1 - Math.pow(1 - value, 3);
+
+const animateAssembly = (now: number) => {
+  const elapsed = now - animationStartedAt;
+  const screenRect = screen.getBoundingClientRect();
+
+  if (elapsed < DRIFT_MS) {
+    assemblyParticles.forEach((particle) => {
+      particle.baseX += particle.velocityX;
+      particle.baseY += particle.velocityY;
+      particle.angle += particle.spin;
+      const currentX = particle.targetX + particle.baseX;
+      const currentY = particle.targetY + particle.baseY;
+      if (currentX < 18 || currentX > screenRect.width - 120) {
+        particle.velocityX *= -1;
+        particle.baseX += particle.velocityX * 5;
+      }
+      if (currentY < 24 || currentY > screenRect.height - 60) {
+        particle.velocityY *= -1;
+        particle.baseY += particle.velocityY * 5;
+      }
+      const wobbleX = Math.sin(elapsed / 520 + particle.phase) * particle.amplitude;
+      const wobbleY = Math.cos(elapsed / 670 + particle.phase) * particle.amplitude * 0.65;
+      const x = particle.baseX + wobbleX;
+      const y = particle.baseY + wobbleY;
+      particle.element.dataset.tx = String(x);
+      particle.element.dataset.ty = String(y);
+      particle.element.style.transform =
+        `translate3d(${x}px, ${y}px, 0) rotate(${particle.angle}deg)`;
+      particle.element.style.opacity = "0.92";
+      particle.element.style.filter = "blur(0.1px)";
+    });
+    signalLock.textContent = "30+ workflows in motion · assembling shortly";
+    assemblyRaf = window.requestAnimationFrame(animateAssembly);
+    return;
+  }
+
+  const progress = Math.min((elapsed - DRIFT_MS) / ASSEMBLE_MS, 1);
+  const eased = easeOutCubic(progress);
+  assemblyParticles.forEach((particle) => {
+    if (particle.snapX === undefined) {
+      particle.snapX = Number(particle.element.dataset.tx) || particle.baseX;
+      particle.snapY = Number(particle.element.dataset.ty) || particle.baseY;
+      particle.snapAngle = particle.angle;
+    }
+    const x = particle.snapX * (1 - eased);
+    const y = (particle.snapY ?? 0) * (1 - eased);
+    const angle = (particle.snapAngle ?? 0) * (1 - eased);
+    particle.element.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg)`;
+    particle.element.style.opacity = "1";
+    particle.element.style.filter = progress > 0.72 ? "none" : "blur(0.1px)";
+  });
+  signalLock.textContent =
+    progress < 1 ? "signal locking · system coming online" : "signal locked · ready";
+
+  if (progress < 1) {
+    assemblyRaf = window.requestAnimationFrame(animateAssembly);
+  } else {
+    settleAssembly();
+  }
+};
+
+const setupAssembly = () => {
+  if (assemblyStarted || currentChannel !== 0) return;
+  assemblyStarted = true;
+  if (reducedMotionQuery.matches) {
+    settleAssembly();
+    return;
+  }
+
+  const screenRect = screen.getBoundingClientRect();
+  assemblyParticles = assemblyPieces.map((element) => {
+    const rect = element.getBoundingClientRect();
+    const maximumX = Math.max(29, screenRect.width - rect.width - 28);
+    const maximumY = Math.max(31, screenRect.height - rect.height - 30);
+    const safeX = randomBetween(28, maximumX);
+    const safeY = randomBetween(30, maximumY);
+    const targetX = rect.left - screenRect.left;
+    const targetY = rect.top - screenRect.top;
+    const offsetX = safeX - targetX;
+    const offsetY = safeY - targetY;
+    return {
+      element,
+      targetX,
+      targetY,
+      baseX: offsetX,
+      baseY: offsetY,
+      angle: randomBetween(-36, 36),
+      spin: randomBetween(-1.2, 1.2),
+      velocityX: randomBetween(-0.45, 0.45),
+      velocityY: randomBetween(-0.36, 0.36),
+      phase: randomBetween(0, Math.PI * 2),
+      amplitude: randomBetween(12, 34),
+    };
+  });
+  hero.classList.add("assembling");
+  spawnMess();
+  animationStartedAt = performance.now();
+  assemblyRaf = window.requestAnimationFrame(animateAssembly);
+};
+
+document.querySelectorAll<HTMLImageElement>("[data-logo]").forEach((logo) => {
+  logo.addEventListener("error", () => logo.classList.add("is-broken"));
 });
 
 const initContactForm = () => {
@@ -819,24 +778,14 @@ const initContactForm = () => {
     if (startedAtField) startedAtField.value = String(Date.now());
   };
 
-  resetStartedAt();
-
-  const setStatus = (
-    message: string,
-    type: "idle" | "success" | "error" = "idle",
-    includeEmailLink = false,
-  ) => {
+  const setStatus = (message: string, type: "idle" | "success" | "error" = "idle") => {
     status.textContent = message;
     status.classList.remove("is-success", "is-error");
     if (type === "success") status.classList.add("is-success");
     if (type === "error") status.classList.add("is-error");
-    if (includeEmailLink) {
-      const link = document.createElement("a");
-      link.href = "mailto:benwebportfolio@gmail.com";
-      link.textContent = "benwebportfolio@gmail.com";
-      status.replaceChildren("Something went wrong. Email me directly at ", link, ".");
-    }
   };
+
+  resetStartedAt();
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -870,7 +819,7 @@ const initContactForm = () => {
 
     submitButton.disabled = true;
     form.setAttribute("aria-busy", "true");
-    setStatus("Sending…");
+    setStatus("Sending signal...");
 
     try {
       const controller = new AbortController();
@@ -896,16 +845,14 @@ const initContactForm = () => {
 
       form.reset();
       resetStartedAt();
-      setStatus("Message sent — I'll be in touch soon.", "success");
+      setStatus("Signal received — thanks.", "success");
       track("contact_form_success");
     } catch (error) {
       const statusCode = error instanceof Error && "status" in error
         ? Number((error as Error & { status?: number }).status) || "network"
         : "network";
-      setStatus("", "error", true);
-      track("contact_form_error", {
-        status: statusCode,
-      });
+      setStatus("Signal interrupted. Try the Email or LinkedIn link.", "error");
+      track("contact_form_error", { status: statusCode });
     } finally {
       submitButton.disabled = false;
       form.removeAttribute("aria-busy");
@@ -915,140 +862,9 @@ const initContactForm = () => {
 
 initContactForm();
 
-const navLinks = document.querySelectorAll<HTMLAnchorElement>("[data-nav-link]");
-
-navLinks.forEach((link) => {
-  link.addEventListener("click", () => {
-    track("nav_clicked", {
-      target: link.getAttribute("href"),
-      label: link.textContent?.trim() || null,
-    });
-  });
+document.querySelector<HTMLAnchorElement>("[data-email-link]")?.addEventListener("click", () => {
+  track("email_icon_clicked");
 });
-
-const observedSections = document.querySelectorAll<HTMLElement>(".section-observed");
-const viewedSections = new Set<string>();
-const sectionDwell = new Map<string, { startedAt: number | null; totalMs: number; maxRatio: number }>();
-const sectionVisibility = new Map<string, number>();
-
-observedSections.forEach((section) => {
-  sectionDwell.set(section.id || "unknown", {
-    startedAt: null,
-    totalMs: 0,
-    maxRatio: 0,
-  });
-  sectionVisibility.set(section.id || "unknown", 0);
-});
-
-const getSectionIdForElement = (element: Element | null) =>
-  element?.closest<HTMLElement>("section")?.id || "global";
-
-const flushSectionDwell = (reason: string, keepActive = true) => {
-  const now = performance.now();
-
-  sectionDwell.forEach((state, section) => {
-    if (state.startedAt !== null) {
-      state.totalMs += now - state.startedAt;
-      state.startedAt = keepActive ? now : null;
-    }
-
-    if (state.totalMs < 400) return;
-
-    track("section_dwell", {
-      section,
-      duration_ms: Math.round(state.totalMs),
-      max_ratio: Number(state.maxRatio.toFixed(2)),
-      reason,
-    });
-
-    state.totalMs = 0;
-    state.maxRatio = 0;
-  });
-};
-
-const sectionObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      const section = entry.target as HTMLElement;
-      const sectionId = section.id;
-      const dwellState = sectionDwell.get(sectionId);
-      sectionVisibility.set(sectionId, entry.isIntersecting ? entry.intersectionRatio : 0);
-
-      if (dwellState) {
-        dwellState.maxRatio = Math.max(dwellState.maxRatio, entry.intersectionRatio);
-
-        if (entry.isIntersecting && entry.intersectionRatio >= 0.28 && dwellState.startedAt === null) {
-          dwellState.startedAt = performance.now();
-        } else if ((!entry.isIntersecting || entry.intersectionRatio < 0.12) && dwellState.startedAt !== null) {
-          dwellState.totalMs += performance.now() - dwellState.startedAt;
-          dwellState.startedAt = null;
-
-          if (dwellState.totalMs >= 400) {
-            track("section_dwell", {
-              section: sectionId,
-              duration_ms: Math.round(dwellState.totalMs),
-              max_ratio: Number(dwellState.maxRatio.toFixed(2)),
-              reason: "section_exit",
-            });
-            dwellState.totalMs = 0;
-            dwellState.maxRatio = 0;
-          }
-        }
-      }
-
-      if (entry.isIntersecting) {
-        if (!viewedSections.has(sectionId)) {
-          viewedSections.add(sectionId);
-          const analyticsSection = sectionId === "home" ? "hero" : sectionId;
-          track("section_viewed", {
-            section: analyticsSection,
-          });
-
-          if (sectionId === "home") {
-            track("hero_viewed");
-          }
-        }
-      }
-    });
-
-    const activeSection = [...sectionVisibility.entries()].reduce(
-      (best, current) => (current[1] > best[1] ? current : best),
-      ["", 0] as [string, number],
-    )[0];
-
-    navLinks.forEach((link) => {
-      const target = link.getAttribute("href")?.replace("#", "");
-      link.classList.toggle("active", target === activeSection);
-    });
-
-  },
-  {
-    threshold: [0, 0.12, 0.28, 0.42, 0.65, 0.9],
-  },
-);
-
-observedSections.forEach((section) => {
-  sectionObserver.observe(section);
-});
-
-document.addEventListener(
-  "click",
-  (event) => {
-    const target = event.target as Element | null;
-    const action = target?.closest<HTMLElement>("a, button, [role='button']");
-    if (!action) return;
-
-    const label = action.getAttribute("aria-label") || action.textContent?.replace(/\s+/g, " ").trim() || action.id || "unlabeled";
-    track("ui_clicked", {
-      section: getSectionIdForElement(action),
-      tag: action.tagName.toLowerCase(),
-      label: label.slice(0, 96),
-      href: action instanceof HTMLAnchorElement ? action.href : null,
-      id: action.id || null,
-    });
-  },
-  { capture: true },
-);
 
 const focusedContactFields = new Set<string>();
 
@@ -1057,11 +873,8 @@ document.addEventListener("focusin", (event) => {
     ".contact-inbox input, .contact-inbox textarea",
   );
   if (!field || field.name === "website" || field.type === "hidden" || focusedContactFields.has(field.name)) return;
-
   focusedContactFields.add(field.name);
-  track("contact_field_focused", {
-    field: field.name,
-  });
+  track("contact_field_focused", { field: field.name });
 });
 
 document.addEventListener("change", (event) => {
@@ -1075,6 +888,28 @@ document.addEventListener("change", (event) => {
   });
 });
 
+document.addEventListener(
+  "click",
+  (event) => {
+    const target = event.target as Element | null;
+    const action = target?.closest<HTMLElement>("a, button, [role='button']");
+    if (!action) return;
+    const label =
+      action.getAttribute("aria-label") ||
+      action.textContent?.replace(/\s+/g, " ").trim() ||
+      action.id ||
+      "unlabeled";
+    track("ui_clicked", {
+      channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+      tag: action.tagName.toLowerCase(),
+      label: label.slice(0, 96),
+      href: action instanceof HTMLAnchorElement ? action.href : null,
+      id: action.id || null,
+    });
+  },
+  { capture: true },
+);
+
 document.addEventListener("click", (event) => {
   const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[target='_blank']");
   if (!link) return;
@@ -1084,18 +919,70 @@ document.addEventListener("click", (event) => {
   });
 });
 
-let visibleStartedAt: number | null = document.visibilityState === "visible" ? performance.now() : null;
-let visibleDurationMs = 0;
+const initPerformanceAnalytics = () => {
+  if (!("PerformanceObserver" in window)) return;
 
-const getVisibleDurationMs = () =>
-  Math.round(visibleDurationMs + (visibleStartedAt === null ? 0 : performance.now() - visibleStartedAt));
+  let largestContentfulPaint = 0;
+  let cumulativeLayoutShift = 0;
+  let interactionLatency = 0;
+  let longTaskCount = 0;
+  let longTaskDuration = 0;
+  const supported = PerformanceObserver.supportedEntryTypes ?? [];
 
-const getActiveSection = () => {
-  for (const [section, state] of sectionDwell.entries()) {
-    if (state.startedAt !== null) return section;
+  if (supported.includes("largest-contentful-paint")) {
+    new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        largestContentfulPaint = Math.max(largestContentfulPaint, entry.startTime);
+      });
+    }).observe({ type: "largest-contentful-paint", buffered: true });
   }
-  return null;
+
+  if (supported.includes("layout-shift")) {
+    new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        const shift = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+        if (!shift.hadRecentInput) cumulativeLayoutShift += shift.value ?? 0;
+      });
+    }).observe({ type: "layout-shift", buffered: true });
+  }
+
+  if (supported.includes("event")) {
+    new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        interactionLatency = Math.max(interactionLatency, entry.duration);
+      });
+    }).observe({ type: "event", buffered: true, durationThreshold: 40 } as PerformanceObserverInit);
+  }
+
+  if (supported.includes("longtask")) {
+    new PerformanceObserver((list) => {
+      list.getEntries().forEach((entry) => {
+        longTaskCount += 1;
+        longTaskDuration += entry.duration;
+      });
+    }).observe({ type: "longtask", buffered: true });
+  }
+
+  window.addEventListener(
+    "pagehide",
+    () => {
+      track("web_vitals", {
+        lcp_ms: Math.round(largestContentfulPaint),
+        cls: Number(cumulativeLayoutShift.toFixed(4)),
+        inp_ms: Math.round(interactionLatency),
+        long_task_count: longTaskCount,
+        long_task_duration_ms: Math.round(longTaskDuration),
+      });
+    },
+    { once: true },
+  );
 };
+
+initPerformanceAnalytics();
+
+let visibleStartedAt: number | null =
+  document.visibilityState === "visible" ? performance.now() : null;
+let visibleDurationMs = 0;
 
 const pauseVisibleTimer = () => {
   if (visibleStartedAt === null) return;
@@ -1103,32 +990,29 @@ const pauseVisibleTimer = () => {
   visibleStartedAt = null;
 };
 
-const resumeCurrentSectionDwell = () => {
-  const section = document
-    .elementFromPoint(window.innerWidth / 2, Math.min(window.innerHeight / 2, window.innerHeight - 1))
-    ?.closest<HTMLElement>("section");
-  const sectionId = section?.id;
-  const state = sectionId ? sectionDwell.get(sectionId) : undefined;
-  if (!state || state.startedAt !== null) return;
-  state.startedAt = performance.now();
-};
+const getVisibleDurationMs = () =>
+  Math.round(
+    visibleDurationMs +
+    (visibleStartedAt === null ? 0 : performance.now() - visibleStartedAt),
+  );
 
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     pauseVisibleTimer();
-    flushSectionDwell("page_hidden", false);
+    stopProgress();
     track("page_hidden", {
       visible_duration_ms: getVisibleDurationMs(),
-      active_section: getActiveSection(),
+      active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
     });
     return;
   }
 
   visibleStartedAt = performance.now();
-  resumeCurrentSectionDwell();
+  channelDwellStartedAt = performance.now();
+  startProgress();
   track("page_visible", {
     visible_duration_ms: getVisibleDurationMs(),
-    max_scroll_depth: maxScrollDepth,
+    active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
   });
 });
 
@@ -1136,44 +1020,44 @@ window.setInterval(() => {
   if (document.visibilityState !== "visible") return;
   track("engagement_heartbeat", {
     visible_duration_ms: getVisibleDurationMs(),
-    max_scroll_depth: maxScrollDepth,
-    active_section: getActiveSection(),
-    scrolled: hasScrolled,
+    active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+    channel_scroll_depth: activeChannelMaxScroll,
+    scrolled: activeChannelHasScrolled,
   });
-}, 30000);
+}, 30_000);
 
 window.addEventListener("pagehide", () => {
   pauseVisibleTimer();
-  flushSectionDwell("session_end", false);
+  flushChannelDwell("session_end");
   track("session_ended", {
     duration_ms: Math.round(performance.now() - sessionStartedAt),
     visible_duration_ms: getVisibleDurationMs(),
-    max_scroll_depth: maxScrollDepth,
-    scrolled: hasScrolled,
-    sections_viewed: viewedSections.size,
+    final_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
   });
 });
 
 window.addEventListener("load", () => {
-  scheduleHashAlignment(true);
-  globalThis.setTimeout(() => scheduleHashAlignment(false), 500);
+  window.requestAnimationFrame(syncChannelScroller);
+  if (currentChannel === 0) globalThis.setTimeout(setupAssembly, 450);
+
   track("site_loaded", {
     path: window.location.pathname,
     viewport_width: window.innerWidth,
     viewport_height: window.innerHeight,
     pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
-    reduced_motion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    reduced_motion: reducedMotionQuery.matches,
     analytics_provider: POSTHOG_KEY ? "posthog" : ANALYTICS_ENDPOINT ? "custom" : "unconfigured",
   });
 
   scheduleIdle(() => {
     void initAnalyticsProvider();
-  }, 2200);
+  }, 1200);
 
   scheduleIdle(() => {
-    const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+    const navigation = performance.getEntriesByType("navigation")[0] as
+      | PerformanceNavigationTiming
+      | undefined;
     if (!navigation) return;
-
     track("performance_timing", {
       dom_content_loaded_ms: Math.round(navigation.domContentLoadedEventEnd),
       load_event_ms: Math.round(navigation.loadEventEnd),
@@ -1182,10 +1066,12 @@ window.addEventListener("load", () => {
     });
 
     const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
-    const transferredBytes = resources.reduce((total, resource) => total + (resource.transferSize || 0), 0);
     track("resource_summary", {
       resource_count: resources.length,
-      transfer_size: transferredBytes,
+      transfer_size: resources.reduce(
+        (total, resource) => total + (resource.transferSize || 0),
+        0,
+      ),
       script_count: resources.filter((resource) => resource.initiatorType === "script").length,
       image_count: resources.filter((resource) => resource.initiatorType === "img").length,
     });
