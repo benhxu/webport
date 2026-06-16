@@ -1,3 +1,4 @@
+import { gsap } from "gsap";
 import Lenis from "lenis";
 
 const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT ?? "/api/contact";
@@ -12,7 +13,14 @@ const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)")
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
-type ChannelDefinition = readonly [number: string, name: string, duration: number];
+type ChannelSource = "nav" | "hero_cta" | "wheel" | "touch" | "keyboard" | "hash";
+
+type ChannelDefinition = {
+  number: string;
+  name: string;
+  sectionId: string;
+  hash: string;
+};
 
 declare global {
   interface Window {
@@ -21,6 +29,28 @@ declare global {
     };
   }
 }
+
+const channels = [
+  { number: "01", name: "Live Profile", sectionId: "signal", hash: "#home" },
+  { number: "02", name: "Systems Shipped", sectionId: "systems-shipped", hash: "#experience" },
+  { number: "03", name: "Case Files", sectionId: "case-files", hash: "#case-files" },
+  { number: "04", name: "Open Line", sectionId: "open-line", hash: "#contact" },
+] as const satisfies readonly ChannelDefinition[];
+
+const hashChannels: Record<string, number> = {
+  "#": 0,
+  "#home": 0,
+  "#signal": 0,
+  "#live-profile": 0,
+  "#about": 0,
+  "#experience": 1,
+  "#systems-shipped": 1,
+  "#work-record": 1,
+  "#case-files": 2,
+  "#cases": 2,
+  "#contact": 3,
+  "#open-line": 3,
+};
 
 const sessionId = (() => {
   const storageKey = "ben_xu_portfolio_session_id";
@@ -43,7 +73,7 @@ const computeLowPowerMode = () => {
 
 const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
-  channel: "01 SIGNAL",
+  channel: "01 Live Profile",
   max_channel_scroll: "0%",
   errors: 0,
 };
@@ -176,6 +206,7 @@ const scheduleIdle = (callback: () => void, timeout = 500) => {
 };
 
 colorSchemeQuery.addEventListener("change", (event) => {
+  updateDebugMetric("color_scheme", event.matches ? "light" : "dark");
   track("color_scheme_changed", {
     color_scheme: event.matches ? "light" : "dark",
   });
@@ -192,54 +223,31 @@ window.addEventListener("unhandledrejection", () => {
 });
 
 const screen = document.querySelector<HTMLElement>("#screen");
-const flash = document.querySelector<HTMLElement>("#flash");
 const fill = document.querySelector<HTMLElement>("#fill");
 const chNum = document.querySelector<HTMLElement>("#chNum");
 const chName = document.querySelector<HTMLElement>("#chName");
 const clockElement = document.querySelector<HTMLElement>("#clock");
-const channelKnob = document.querySelector<HTMLElement>("#channelKnob");
-const signalLock = document.querySelector<HTMLElement>("#signalLock");
-const hero = document.querySelector<HTMLElement>("#hero");
+const transitionOverlay = document.querySelector<HTMLElement>("[data-signal-transition]");
+const transitionLabel = document.querySelector<HTMLElement>("[data-signal-label]");
 const channelElements = Array.from(document.querySelectorAll<HTMLElement>(".channel"));
-const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".nav [data-goto]"));
+const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-goto]"));
 const gotoControls = Array.from(document.querySelectorAll<HTMLElement>("[data-goto]"));
 
-if (!screen || !flash || !fill || !chNum || !chName || !hero || !signalLock) {
-  throw new Error("Required TV interface elements are missing.");
+if (!screen || !fill || !chNum || !chName || channelElements.length !== channels.length) {
+  throw new Error("Required broadcast interface elements are missing.");
 }
 
-const channels = [
-  ["01", "SIGNAL", 9500],
-  ["02", "PROFILE", 10000],
-  ["03", "WORK RECORD", 12000],
-  ["04", "OPEN LINE", Number.POSITIVE_INFINITY],
-] as const satisfies readonly ChannelDefinition[];
-
-const hashChannels: Record<string, number> = {
-  "#home": 0,
-  "#signal": 0,
-  "#about": 1,
-  "#profile": 1,
-  "#experience": 2,
-  "#work-record": 2,
-  "#contact": 3,
-  "#open-line": 3,
-};
-
 let currentChannel = hashChannels[window.location.hash] ?? 0;
-let autoplayEnabled = currentChannel === 0;
-let progressTimer = 0;
-let progressRaf = 0;
-let progressStartedAt = 0;
 let switching = false;
 let channelLenis: Lenis | null = null;
+let lenisRaf = 0;
 let channelDwellStartedAt = performance.now();
 let lastWheelAt = 0;
 let touchStartX = 0;
 let touchStartY = 0;
 let activeChannelMaxScroll = 0;
 let activeChannelHasScrolled = false;
-let assemblyStarted = false;
+let heroMotionStarted = false;
 const trackedChannelScrollMilestones = new Set<number>();
 
 const formatClockPart = (value: number) => String(value).padStart(2, "0");
@@ -253,81 +261,52 @@ const updateClock = () => {
 updateClock();
 window.setInterval(updateClock, 1000);
 
-const flashStatic = () =>
-  new Promise<void>((resolve) => {
-    const frames = [0.22, 0.9, 0.08, 0.7, 0.02, 0.35, 0];
-    let index = 0;
-    const frame = () => {
-      flash.style.opacity = String(frames[index++] ?? 0);
-      if (index < frames.length) globalThis.setTimeout(frame, 45);
-      else resolve();
-    };
-    frame();
-  });
-
-const stopProgress = () => {
-  globalThis.clearTimeout(progressTimer);
-  window.cancelAnimationFrame(progressRaf);
-  fill.style.width = "0%";
-};
-
-const startProgress = () => {
-  stopProgress();
-  if (!autoplayEnabled) {
-    fill.style.width = "100%";
-    return;
-  }
-  const duration = channels[currentChannel]?.[2] ?? Number.POSITIVE_INFINITY;
-  if (!Number.isFinite(duration)) {
-    fill.style.width = "100%";
-    return;
-  }
-
-  progressStartedAt = performance.now();
-  const step = (time: number) => {
-    const progress = Math.min((time - progressStartedAt) / duration, 1);
-    fill.style.width = `${progress * 100}%`;
-    if (progress < 1) progressRaf = window.requestAnimationFrame(step);
-  };
-  progressRaf = window.requestAnimationFrame(step);
-  progressTimer = globalThis.setTimeout(() => {
-    void go(Math.min(currentChannel + 1, channels.length - 1), "auto");
-  }, duration);
+const setProgress = (value: number) => {
+  fill.style.width = `${Math.max(0, Math.min(100, value))}%`;
 };
 
 const getActiveChannelElement = () => channelElements[currentChannel] ?? null;
 
 const destroyChannelScroller = () => {
+  if (lenisRaf) {
+    window.cancelAnimationFrame(lenisRaf);
+    lenisRaf = 0;
+  }
   channelLenis?.destroy();
   channelLenis = null;
 };
 
+const startLenisLoop = () => {
+  if (!channelLenis || lenisRaf) return;
+  const lenisFrame = (time: number) => {
+    channelLenis?.raf(time);
+    if (channelLenis) lenisRaf = window.requestAnimationFrame(lenisFrame);
+  };
+  lenisRaf = window.requestAnimationFrame(lenisFrame);
+};
+
 const syncChannelScroller = () => {
   destroyChannelScroller();
+  if (computeLowPowerMode()) return;
   const channel = getActiveChannelElement();
-  const content = channel?.querySelector<HTMLElement>(".inner, .hero");
+  const content = channel?.querySelector<HTMLElement>(".section-shell, .hero");
   if (!channel || !content || channel.scrollHeight <= channel.clientHeight + 2) return;
 
   channelLenis = new Lenis({
     wrapper: channel,
     content,
-    duration: 1.1,
+    duration: 0.9,
     smoothWheel: true,
     syncTouch: false,
   });
+  startLenisLoop();
 };
-
-const lenisFrame = (time: number) => {
-  channelLenis?.raf(time);
-  window.requestAnimationFrame(lenisFrame);
-};
-window.requestAnimationFrame(lenisFrame);
 
 const flushChannelDwell = (reason: string) => {
   const durationMs = Math.round(performance.now() - channelDwellStartedAt);
   track("channel_dwell", {
-    channel: channels[currentChannel]?.[0] ?? String(currentChannel),
-    name: channels[currentChannel]?.[1] ?? "UNKNOWN",
+    channel: channels[currentChannel]?.number ?? String(currentChannel),
+    name: channels[currentChannel]?.name ?? "UNKNOWN",
     duration_ms: durationMs,
     max_scroll_depth: activeChannelMaxScroll,
     scrolled: activeChannelHasScrolled,
@@ -341,76 +320,199 @@ const flushChannelDwell = (reason: string) => {
 };
 
 const updateHistory = (index: number) => {
-  const hashes = ["#home", "#about", "#experience", "#contact"];
-  const nextHash = hashes[index] ?? "#home";
+  const nextHash = channels[index]?.hash ?? "#home";
   if (window.location.hash === nextHash) return;
   window.history.replaceState(null, "", nextHash);
+};
+
+const animateChannelEntry = (index: number) => {
+  if (reducedMotionQuery.matches) return;
+  const channel = channelElements[index];
+  if (!channel) return;
+  const revealTargets = channel.querySelectorAll<HTMLElement>(
+    ".section-heading, .reveal-card, .contact-copy, .form, .lower-third",
+  );
+  if (!revealTargets.length) return;
+
+  gsap.fromTo(
+    revealTargets,
+    { autoAlpha: 0, y: 18, filter: "blur(6px)" },
+    {
+      autoAlpha: 1,
+      y: 0,
+      filter: "blur(0px)",
+      duration: 0.58,
+      ease: "power3.out",
+      stagger: 0.055,
+      overwrite: true,
+    },
+  );
 };
 
 const setChannelState = (index: number) => {
   currentChannel = index;
   channelElements.forEach((channel, channelIndex) => {
-    channel.hidden = channelIndex !== currentChannel;
-    channel.setAttribute("aria-hidden", String(channelIndex !== currentChannel));
+    const active = channelIndex === currentChannel;
+    channel.hidden = !active;
+    channel.setAttribute("aria-hidden", String(!active));
+    if (active) channel.scrollTo({ top: 0, behavior: "auto" });
   });
-  navButtons.forEach((button, buttonIndex) => {
-    const active = buttonIndex === currentChannel;
+  navButtons.forEach((button) => {
+    const indexValue = Number(button.dataset.goto);
+    const active = indexValue === currentChannel;
     button.classList.toggle("active", active);
     if (active) button.setAttribute("aria-current", "page");
     else button.removeAttribute("aria-current");
   });
 
   const definition = channels[currentChannel];
-  chNum.textContent = definition?.[0] ?? "01";
-  chName.textContent = definition?.[1] ?? "SIGNAL";
-  if (channelKnob) channelKnob.style.transform = `rotate(${currentChannel * 42 + 18}deg)`;
-  getActiveChannelElement()?.scrollTo({ top: 0, behavior: "auto" });
+  chNum.textContent = definition?.number ?? "01";
+  chName.textContent = definition?.name ?? "Live Profile";
   updateHistory(currentChannel);
-  updateDebugMetric("channel", `${definition?.[0] ?? ""} ${definition?.[1] ?? ""}`);
+  updateDebugMetric("channel", `${definition?.number ?? ""} ${definition?.name ?? ""}`);
+  setProgress(100);
   window.requestAnimationFrame(syncChannelScroller);
+  animateChannelEntry(currentChannel);
 };
 
-const go = async (
-  index: number,
-  source: "nav" | "hero_cta" | "wheel" | "touch" | "keyboard" | "auto" | "hash" = "nav",
-) => {
+const playChannelTransition = (channelLabel: string, nextState: () => void) =>
+  new Promise<void>((resolve) => {
+    if (transitionLabel) transitionLabel.textContent = channelLabel;
+
+    if (!transitionOverlay) {
+      nextState();
+      resolve();
+      return;
+    }
+
+    transitionOverlay.classList.remove("active");
+    void transitionOverlay.offsetWidth;
+    transitionOverlay.classList.add("active");
+
+    const switchDelay = reducedMotionQuery.matches ? 80 : 220;
+    const totalDelay = reducedMotionQuery.matches ? 250 : 780;
+
+    globalThis.setTimeout(nextState, switchDelay);
+    globalThis.setTimeout(() => {
+      transitionOverlay.classList.remove("active");
+      resolve();
+    }, totalDelay);
+  });
+
+const go = async (index: number, source: ChannelSource = "nav") => {
   if (switching || index === currentChannel || index < 0 || index >= channels.length) return;
-  if (!["auto", "hash"].includes(source)) autoplayEnabled = false;
   switching = true;
-  stopProgress();
   flushChannelDwell("channel_exit");
-  await flashStatic();
-  setChannelState(index);
-  if (index === 0 && !assemblyStarted) {
-    globalThis.setTimeout(setupAssembly, 450);
-  }
+  const nextChannel = channels[index];
+  await playChannelTransition(`CH ${nextChannel?.number ?? "01"}`, () => {
+    setChannelState(index);
+  });
   channelDwellStartedAt = performance.now();
-  startProgress();
   track("channel_viewed", {
-    channel: channels[index]?.[0] ?? String(index),
-    name: channels[index]?.[1] ?? "",
+    channel: channels[index]?.number ?? String(index),
+    name: channels[index]?.name ?? "",
     source,
   });
   switching = false;
 };
 
+const initHeroMotion = () => {
+  if (heroMotionStarted) return;
+  heroMotionStarted = true;
+
+  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
+  const floatWords = gsap.utils.toArray<HTMLElement>(".float-word");
+  if (reducedMotionQuery.matches) {
+    gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
+    gsap.set(floatWords, { autoAlpha: 0.28, clearProps: "transform" });
+    track("hero_assembly_completed", { duration_ms: 0 });
+    return;
+  }
+
+  const mm = gsap.matchMedia();
+  mm.add("(prefers-reduced-motion: no-preference)", () => {
+    gsap.set(heroLines, { autoAlpha: 0, y: 28, filter: "blur(10px)" });
+    gsap.set(floatWords, {
+      autoAlpha: 0,
+      scale: 0.94,
+      x: () => gsap.utils.random(-24, 24),
+      y: () => gsap.utils.random(-18, 18),
+    });
+
+    const timeline = gsap.timeline({
+      defaults: { ease: "power3.out" },
+      onComplete: () => {
+        track("hero_assembly_completed", { duration_ms: 2600 });
+      },
+    });
+
+    timeline
+      .to(floatWords, {
+        autoAlpha: 0.62,
+        scale: 1,
+        x: 0,
+        y: 0,
+        duration: 0.9,
+        stagger: 0.06,
+      })
+      .to(
+        floatWords,
+        {
+          autoAlpha: 0.24,
+          x: () => gsap.utils.random(-10, 10),
+          y: () => gsap.utils.random(-8, 8),
+          duration: 0.8,
+          stagger: 0.035,
+        },
+        "-=0.15",
+      )
+      .to(
+        heroLines,
+        {
+          autoAlpha: 1,
+          y: 0,
+          filter: "blur(0px)",
+          duration: 0.78,
+          stagger: 0.12,
+        },
+        "-=0.45",
+      );
+
+    floatWords.forEach((word, index) => {
+      gsap.to(word, {
+        x: `+=${index % 2 === 0 ? 16 : -14}`,
+        y: `+=${index % 3 === 0 ? -12 : 10}`,
+        rotation: index % 2 === 0 ? 1.5 : -1.5,
+        duration: 7 + index * 0.45,
+        ease: "sine.inOut",
+        repeat: -1,
+        yoyo: true,
+        delay: 1.6 + index * 0.08,
+      });
+    });
+
+    return () => {
+      timeline.kill();
+      gsap.killTweensOf([...heroLines, ...floatWords]);
+    };
+  });
+};
+
 setChannelState(currentChannel);
-startProgress();
+setProgress(100);
+initHeroMotion();
 track("channel_viewed", {
-  channel: channels[currentChannel]?.[0] ?? String(currentChannel),
-  name: channels[currentChannel]?.[1] ?? "",
+  channel: channels[currentChannel]?.number ?? String(currentChannel),
+  name: channels[currentChannel]?.name ?? "",
   source: window.location.hash ? "hash" : "nav",
 });
 
 gotoControls.forEach((control) => {
-  control.addEventListener("click", () => {
+  control.addEventListener("click", (event) => {
     const index = Number(control.dataset.goto);
-    const source = control.closest(".hero") ? "hero_cta" : "nav";
-    autoplayEnabled = false;
-    if (index === currentChannel) {
-      stopProgress();
-      fill.style.width = "100%";
-    }
+    if (!Number.isFinite(index)) return;
+    event.preventDefault();
+    const source: ChannelSource = control.closest(".hero") ? "hero_cta" : "nav";
     if (source === "hero_cta") {
       track("cta_clicked", {
         location: "hero",
@@ -441,9 +543,8 @@ window.addEventListener(
   (event) => {
     if (canScrollInDirection(event.deltaY)) return;
     const now = Date.now();
-    if (now - lastWheelAt < 650) return;
+    if (now - lastWheelAt < 720) return;
     lastWheelAt = now;
-    autoplayEnabled = false;
     const next = event.deltaY > 0
       ? Math.min(currentChannel + 1, channels.length - 1)
       : Math.max(currentChannel - 1, 0);
@@ -472,7 +573,6 @@ window.addEventListener(
     const verticalAtBoundary = Math.abs(deltaY) > 60 && !canScrollInDirection(deltaY);
     if (!horizontalSwipe && !verticalAtBoundary) return;
 
-    autoplayEnabled = false;
     const delta = horizontalSwipe ? deltaX : deltaY;
     const next = delta > 0
       ? Math.min(currentChannel + 1, channels.length - 1)
@@ -484,14 +584,18 @@ window.addEventListener(
 
 window.addEventListener("keydown", (event) => {
   const target = event.target as HTMLElement | null;
-  if (target?.matches("input, textarea, button, a")) return;
-  if (["ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp"].includes(event.key)) {
-    autoplayEnabled = false;
+  if (target?.matches("input, textarea, button, a, select")) return;
+
+  if (/^[1-4]$/.test(event.key)) {
+    event.preventDefault();
+    void go(Number(event.key) - 1, "keyboard");
+    return;
   }
-  if (event.key === "ArrowRight") void go(Math.min(currentChannel + 1, 3), "keyboard");
+
+  if (event.key === "ArrowRight") void go(Math.min(currentChannel + 1, channels.length - 1), "keyboard");
   if (event.key === "ArrowLeft") void go(Math.max(currentChannel - 1, 0), "keyboard");
   if (event.key === "ArrowDown" && !canScrollInDirection(1)) {
-    void go(Math.min(currentChannel + 1, 3), "keyboard");
+    void go(Math.min(currentChannel + 1, channels.length - 1), "keyboard");
   }
   if (event.key === "ArrowUp" && !canScrollInDirection(-1)) {
     void go(Math.max(currentChannel - 1, 0), "keyboard");
@@ -512,11 +616,8 @@ channelElements.forEach((channel, index) => {
         const depth = Math.min(100, Math.round((channel.scrollTop / scrollable) * 100));
         if (!activeChannelHasScrolled && channel.scrollTop > 4) {
           activeChannelHasScrolled = true;
-          autoplayEnabled = false;
-          stopProgress();
-          fill.style.width = "100%";
           track("channel_scroll_started", {
-            channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+            channel: channels[currentChannel]?.number ?? String(currentChannel),
           });
         }
         if (depth > activeChannelMaxScroll) {
@@ -526,7 +627,7 @@ channelElements.forEach((channel, index) => {
             if (depth < milestone || trackedChannelScrollMilestones.has(milestone)) return;
             trackedChannelScrollMilestones.add(milestone);
             track("channel_scroll_depth", {
-              channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+              channel: channels[currentChannel]?.number ?? String(currentChannel),
               depth_percent: milestone,
             });
           });
@@ -542,226 +643,13 @@ window.addEventListener(
   "resize",
   () => {
     globalThis.clearTimeout(resizeTimer);
-    resizeTimer = globalThis.setTimeout(syncChannelScroller, 160);
+    resizeTimer = globalThis.setTimeout(() => {
+      updateDebugMetric("low_power_mode", computeLowPowerMode());
+      syncChannelScroller();
+    }, 180);
   },
   { passive: true },
 );
-
-type AssemblyParticle = {
-  element: HTMLElement;
-  targetX: number;
-  targetY: number;
-  baseX: number;
-  baseY: number;
-  angle: number;
-  spin: number;
-  velocityX: number;
-  velocityY: number;
-  phase: number;
-  amplitude: number;
-  snapX?: number;
-  snapY?: number;
-  snapAngle?: number;
-};
-
-type ChaosParticle = {
-  element: HTMLElement;
-  x: number;
-  y: number;
-  velocityX: number;
-  velocityY: number;
-  rotation: number;
-  spin: number;
-};
-
-const assemblyPieces = Array.from(document.querySelectorAll<HTMLElement>(".assemble-piece"));
-const chaosWords = [
-  "manual monday",
-  "copy paste",
-  "who owns this?",
-  "version_final_3",
-  "missing owner",
-  "update tracker",
-  "RMA pending",
-  "ask team",
-  "no source",
-  "out of sync",
-  "spreadsheet tab 12",
-  "TBD",
-  "N/A",
-  "handoff broke",
-];
-const DRIFT_MS = 1800;
-const ASSEMBLE_MS = 2200;
-let assemblyParticles: AssemblyParticle[] = [];
-let chaosParticles: ChaosParticle[] = [];
-let animationStartedAt = 0;
-let assemblyRaf = 0;
-let chaosRaf = 0;
-
-const randomBetween = (minimum: number, maximum: number) =>
-  minimum + Math.random() * Math.max(0, maximum - minimum);
-
-const removeChaos = () => {
-  window.cancelAnimationFrame(chaosRaf);
-  chaosParticles.forEach((particle) => particle.element.remove());
-  chaosParticles = [];
-};
-
-const spawnMess = () => {
-  removeChaos();
-  if (reducedMotionQuery.matches || currentChannel !== 0) return;
-
-  const count = computeLowPowerMode() ? 12 : 24;
-  for (let index = 0; index < count; index += 1) {
-    const element = document.createElement("span");
-    element.className = `chaos-word${Math.random() > 0.68 ? " gold" : ""}`;
-    element.textContent = chaosWords[Math.floor(Math.random() * chaosWords.length)] ?? "out of sync";
-    screen.append(element);
-    chaosParticles.push({
-      element,
-      x: randomBetween(20, Math.max(21, screen.clientWidth - 160)),
-      y: randomBetween(25, Math.max(26, screen.clientHeight - 40)),
-      velocityX: randomBetween(-0.22, 0.22),
-      velocityY: randomBetween(-0.18, 0.18),
-      rotation: randomBetween(-12, 12),
-      spin: randomBetween(-0.08, 0.08),
-    });
-  }
-
-  const animateChaos = () => {
-    if (document.visibilityState === "visible" && currentChannel === 0) {
-      chaosParticles.forEach((particle) => {
-        particle.x += particle.velocityX;
-        particle.y += particle.velocityY;
-        particle.rotation += particle.spin;
-        if (particle.x < 0 || particle.x > screen.clientWidth - 140) particle.velocityX *= -1;
-        if (particle.y < 0 || particle.y > screen.clientHeight - 28) particle.velocityY *= -1;
-        particle.element.style.transform =
-          `translate3d(${particle.x}px, ${particle.y}px, 0) rotate(${particle.rotation}deg)`;
-      });
-    }
-    chaosRaf = window.requestAnimationFrame(animateChaos);
-  };
-  chaosRaf = window.requestAnimationFrame(animateChaos);
-};
-
-const settleAssembly = () => {
-  window.cancelAnimationFrame(assemblyRaf);
-  hero.classList.remove("assembling");
-  hero.classList.add("assembled");
-  assemblyPieces.forEach((element) => {
-    element.style.transform = "";
-    element.style.opacity = "";
-    element.style.filter = "";
-  });
-  signalLock.textContent = "signal locked · ready";
-  removeChaos();
-  track("hero_assembly_completed", {
-    duration_ms: reducedMotionQuery.matches ? 0 : DRIFT_MS + ASSEMBLE_MS,
-  });
-};
-
-const easeOutCubic = (value: number) => 1 - Math.pow(1 - value, 3);
-
-const animateAssembly = (now: number) => {
-  const elapsed = now - animationStartedAt;
-  const screenRect = screen.getBoundingClientRect();
-
-  if (elapsed < DRIFT_MS) {
-    assemblyParticles.forEach((particle) => {
-      particle.baseX += particle.velocityX;
-      particle.baseY += particle.velocityY;
-      particle.angle += particle.spin;
-      const currentX = particle.targetX + particle.baseX;
-      const currentY = particle.targetY + particle.baseY;
-      if (currentX < 18 || currentX > screenRect.width - 120) {
-        particle.velocityX *= -1;
-        particle.baseX += particle.velocityX * 5;
-      }
-      if (currentY < 24 || currentY > screenRect.height - 60) {
-        particle.velocityY *= -1;
-        particle.baseY += particle.velocityY * 5;
-      }
-      const wobbleX = Math.sin(elapsed / 520 + particle.phase) * particle.amplitude;
-      const wobbleY = Math.cos(elapsed / 670 + particle.phase) * particle.amplitude * 0.65;
-      const x = particle.baseX + wobbleX;
-      const y = particle.baseY + wobbleY;
-      particle.element.dataset.tx = String(x);
-      particle.element.dataset.ty = String(y);
-      particle.element.style.transform =
-        `translate3d(${x}px, ${y}px, 0) rotate(${particle.angle}deg)`;
-      particle.element.style.opacity = "0.92";
-      particle.element.style.filter = "blur(0.1px)";
-    });
-    signalLock.textContent = "30+ workflows in motion · assembling shortly";
-    assemblyRaf = window.requestAnimationFrame(animateAssembly);
-    return;
-  }
-
-  const progress = Math.min((elapsed - DRIFT_MS) / ASSEMBLE_MS, 1);
-  const eased = easeOutCubic(progress);
-  assemblyParticles.forEach((particle) => {
-    if (particle.snapX === undefined) {
-      particle.snapX = Number(particle.element.dataset.tx) || particle.baseX;
-      particle.snapY = Number(particle.element.dataset.ty) || particle.baseY;
-      particle.snapAngle = particle.angle;
-    }
-    const x = particle.snapX * (1 - eased);
-    const y = (particle.snapY ?? 0) * (1 - eased);
-    const angle = (particle.snapAngle ?? 0) * (1 - eased);
-    particle.element.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${angle}deg)`;
-    particle.element.style.opacity = "1";
-    particle.element.style.filter = progress > 0.72 ? "none" : "blur(0.1px)";
-  });
-  signalLock.textContent =
-    progress < 1 ? "signal locking · system coming online" : "signal locked · ready";
-
-  if (progress < 1) {
-    assemblyRaf = window.requestAnimationFrame(animateAssembly);
-  } else {
-    settleAssembly();
-  }
-};
-
-const setupAssembly = () => {
-  if (assemblyStarted || currentChannel !== 0) return;
-  assemblyStarted = true;
-  if (reducedMotionQuery.matches) {
-    settleAssembly();
-    return;
-  }
-
-  const screenRect = screen.getBoundingClientRect();
-  assemblyParticles = assemblyPieces.map((element) => {
-    const rect = element.getBoundingClientRect();
-    const maximumX = Math.max(29, screenRect.width - rect.width - 28);
-    const maximumY = Math.max(31, screenRect.height - rect.height - 30);
-    const safeX = randomBetween(28, maximumX);
-    const safeY = randomBetween(30, maximumY);
-    const targetX = rect.left - screenRect.left;
-    const targetY = rect.top - screenRect.top;
-    const offsetX = safeX - targetX;
-    const offsetY = safeY - targetY;
-    return {
-      element,
-      targetX,
-      targetY,
-      baseX: offsetX,
-      baseY: offsetY,
-      angle: randomBetween(-36, 36),
-      spin: randomBetween(-1.2, 1.2),
-      velocityX: randomBetween(-0.45, 0.45),
-      velocityY: randomBetween(-0.36, 0.36),
-      phase: randomBetween(0, Math.PI * 2),
-      amplitude: randomBetween(12, 34),
-    };
-  });
-  hero.classList.add("assembling");
-  spawnMess();
-  animationStartedAt = performance.now();
-  assemblyRaf = window.requestAnimationFrame(animateAssembly);
-};
 
 document.querySelectorAll<HTMLImageElement>("[data-logo]").forEach((logo) => {
   logo.addEventListener("error", () => logo.classList.add("is-broken"));
@@ -804,7 +692,7 @@ const initContactForm = () => {
     if (String(formData.get("website") ?? "").trim()) {
       form.reset();
       resetStartedAt();
-      setStatus("Message sent — I'll be in touch soon.", "success");
+      setStatus("Message sent - I will be in touch soon.", "success");
       return;
     }
 
@@ -845,13 +733,13 @@ const initContactForm = () => {
 
       form.reset();
       resetStartedAt();
-      setStatus("Signal received — thanks.", "success");
+      setStatus("Signal received - thanks.", "success");
       track("contact_form_success");
     } catch (error) {
       const statusCode = error instanceof Error && "status" in error
         ? Number((error as Error & { status?: number }).status) || "network"
         : "network";
-      setStatus("Signal interrupted. Try the Email or LinkedIn link.", "error");
+      setStatus("Signal interrupted. Please try again in a moment.", "error");
       track("contact_form_error", { status: statusCode });
     } finally {
       submitButton.disabled = false;
@@ -900,7 +788,7 @@ document.addEventListener(
       action.id ||
       "unlabeled";
     track("ui_clicked", {
-      channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+      channel: channels[currentChannel]?.number ?? String(currentChannel),
       tag: action.tagName.toLowerCase(),
       label: label.slice(0, 96),
       href: action instanceof HTMLAnchorElement ? action.href : null,
@@ -999,20 +887,20 @@ const getVisibleDurationMs = () =>
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     pauseVisibleTimer();
-    stopProgress();
+    destroyChannelScroller();
     track("page_hidden", {
       visible_duration_ms: getVisibleDurationMs(),
-      active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+      active_channel: channels[currentChannel]?.number ?? String(currentChannel),
     });
     return;
   }
 
   visibleStartedAt = performance.now();
   channelDwellStartedAt = performance.now();
-  startProgress();
+  syncChannelScroller();
   track("page_visible", {
     visible_duration_ms: getVisibleDurationMs(),
-    active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+    active_channel: channels[currentChannel]?.number ?? String(currentChannel),
   });
 });
 
@@ -1020,7 +908,7 @@ window.setInterval(() => {
   if (document.visibilityState !== "visible") return;
   track("engagement_heartbeat", {
     visible_duration_ms: getVisibleDurationMs(),
-    active_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+    active_channel: channels[currentChannel]?.number ?? String(currentChannel),
     channel_scroll_depth: activeChannelMaxScroll,
     scrolled: activeChannelHasScrolled,
   });
@@ -1032,48 +920,20 @@ window.addEventListener("pagehide", () => {
   track("session_ended", {
     duration_ms: Math.round(performance.now() - sessionStartedAt),
     visible_duration_ms: getVisibleDurationMs(),
-    final_channel: channels[currentChannel]?.[0] ?? String(currentChannel),
+    final_channel: channels[currentChannel]?.number ?? String(currentChannel),
   });
 });
 
 window.addEventListener("load", () => {
   window.requestAnimationFrame(syncChannelScroller);
-  if (currentChannel === 0) globalThis.setTimeout(setupAssembly, 450);
-
-  track("site_loaded", {
-    path: window.location.pathname,
-    viewport_width: window.innerWidth,
-    viewport_height: window.innerHeight,
-    pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
-    reduced_motion: reducedMotionQuery.matches,
-    analytics_provider: POSTHOG_KEY ? "posthog" : ANALYTICS_ENDPOINT ? "custom" : "unconfigured",
-  });
-
+  scheduleIdle(initAnalyticsProvider, 900);
   scheduleIdle(() => {
-    void initAnalyticsProvider();
-  }, 1200);
-
-  scheduleIdle(() => {
-    const navigation = performance.getEntriesByType("navigation")[0] as
-      | PerformanceNavigationTiming
-      | undefined;
-    if (!navigation) return;
-    track("performance_timing", {
-      dom_content_loaded_ms: Math.round(navigation.domContentLoadedEventEnd),
-      load_event_ms: Math.round(navigation.loadEventEnd),
-      response_ms: Math.round(navigation.responseEnd),
-      transfer_size: navigation.transferSize || null,
+    track("performance_context", {
+      hardware_concurrency: navigator.hardwareConcurrency || null,
+      device_memory: "deviceMemory" in navigator
+        ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
+        : null,
+      low_power_mode: computeLowPowerMode(),
     });
-
-    const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
-    track("resource_summary", {
-      resource_count: resources.length,
-      transfer_size: resources.reduce(
-        (total, resource) => total + (resource.transferSize || 0),
-        0,
-      ),
-      script_count: resources.filter((resource) => resource.initiatorType === "script").length,
-      image_count: resources.filter((resource) => resource.initiatorType === "img").length,
-    });
-  }, 1800);
+  }, 1400);
 });

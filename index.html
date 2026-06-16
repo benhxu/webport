@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#040406" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#e8e1d4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#030407" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f4f0e8" media="(prefers-color-scheme: light)" />
     <meta name="robots" content="index, follow" />
     <title>Ben Xu &mdash; Strategy &amp; Operations</title>
     <meta
@@ -15,17 +15,20 @@
     <meta property="og:title" content="Ben Xu &mdash; Strategy &amp; Operations" />
     <meta
       property="og:description"
-      content="Operator who builds. GTM reporting, workflow automation, decision systems."
+      content="Operator who builds systems for strategy, BizOps, and GTM operations teams."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://webport-mu-seven.vercel.app/" />
     <meta property="og:image" content="https://webport-mu-seven.vercel.app/og-tv.png" />
-    <meta property="og:image:alt" content="Ben Xu portfolio displayed inside a classic CRT television" />
+    <meta
+      property="og:image:alt"
+      content="Ben Xu portfolio presented as a premium broadcast interface"
+    />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Ben Xu — Strategy &amp; Operations" />
     <meta
       name="twitter:description"
-      content="Operator who builds. GTM reporting, workflow automation, decision systems."
+      content="Operator who builds systems for strategy, BizOps, and GTM operations teams."
     />
     <meta name="twitter:image" content="https://webport-mu-seven.vercel.app/og-tv.png" />
     <link rel="canonical" href="https://webport-mu-seven.vercel.app/" />
@@ -39,389 +42,380 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div class="tv-stage">
-      <div class="tv-shell">
-        <div class="tv">
-          <header class="topbar">
-            <div class="ch-meta" aria-live="polite">
-              <span>CH</span>
-              <span class="ch-num" id="chNum">01</span>
-              <span id="chName">SIGNAL</span>
-            </div>
-            <div class="live">LIVE SIGNAL</div>
-            <div class="clock" id="clock" aria-label="Current local time">00:00:00</div>
-          </header>
-
-          <main class="screen" id="screen">
-            <div class="static-flash" id="flash" aria-hidden="true"></div>
-
-            <section
-              class="channel section-observed"
-              id="signal"
-              data-channel-index="0"
-              aria-labelledby="hero-title"
-            >
-              <div class="hero" id="hero">
-                <p class="hero-kicker" data-assemble-line>
-                  <span class="assemble-piece">Open</span>
-                  <span class="assemble-piece">to</span>
-                  <span class="assemble-piece">opportunities</span>
-                </p>
-                <h1 class="hero-name" id="hero-title">
-                  <span class="assemble-piece">BEN</span>
-                  <span class="assemble-piece xu">XU</span>
-                </h1>
-                <p class="hero-role" data-assemble-line>
-                  <span class="assemble-piece">Strategy</span>
-                  <span class="assemble-piece">&amp;</span>
-                  <span class="assemble-piece">Operations</span>
-                  <span class="assemble-piece">&middot;</span>
-                  <span class="assemble-piece">BizOps</span>
-                  <span class="assemble-piece">&middot;</span>
-                  <span class="assemble-piece">GTM</span>
-                  <span class="assemble-piece">Ops</span>
-                </p>
-                <p class="hero-tagline">
-                  <span class="assemble-piece">I</span>
-                  <span class="assemble-piece">turn</span>
-                  <span class="assemble-piece">messy</span>
-                  <span class="assemble-piece">workflows</span><br />
-                  <span class="assemble-piece">into</span>
-                  <span class="assemble-piece">systems</span>
-                  <span class="assemble-piece">teams</span>
-                  <span class="assemble-piece accent">actually</span>
-                  <span class="assemble-piece accent">use.</span>
-                </p>
-                <div class="hero-actions">
-                  <button class="btn primary assemble-piece" type="button" data-goto="2">
-                    See my work <span aria-hidden="true">&rarr;</span>
-                  </button>
-                  <button class="btn assemble-piece" type="button" data-goto="3">
-                    Let's talk
-                  </button>
-                </div>
-              </div>
-              <p class="signal-lock" id="signalLock" aria-live="polite">
-                30+ workflows in motion &middot; assembling shortly
-              </p>
-            </section>
-
-            <section
-              class="channel section-observed"
-              id="profile"
-              data-channel-index="1"
-              aria-labelledby="about-title"
-              hidden
-            >
-              <div class="inner about-grid">
-                <div class="about-story">
-                  <p class="ey">02 &mdash; Profile</p>
-                  <h2 class="h2" id="about-title">
-                    I didn't plan to be an operator.<br />
-                    <span>I just couldn't leave broken things alone.</span>
-                  </h2>
-                  <p class="p">
-                    My family moved to San Francisco from China when I was one. I grew up
-                    watching my parents navigate a country whose systems &mdash; healthcare,
-                    banking, bureaucracy &mdash; weren't designed for them. I became the
-                    translator. The fixer. The person who read the fine print.
-                  </p>
-                  <p class="p">
-                    That instinct followed me to UC San Diego, where I was the first in my
-                    family to go to college. At Rady, I kept gravitating to the same problems:
-                    the spreadsheet no one maintained, the process no one documented, the gap
-                    between how things were supposed to work and how they actually did.
-                  </p>
-                  <p class="p">
-                    At Freewire Technologies and Marlo.Today, that instinct became the work:
-                    audit what is scattered, make the operating picture visible, and build a
-                    process the team can keep using.
-                  </p>
-                </div>
-                <aside class="about-proof">
-                  <blockquote class="quote">
-                    I'm most useful when a team is moving fast enough to feel the chaos but
-                    hasn't yet built the infrastructure to survive it.
-                  </blockquote>
-                  <div class="facts">
-                    <div class="fact">
-                      <small>Education</small>
-                      <p>UC San Diego &middot; Rady School of Management</p>
-                    </div>
-                    <div class="fact">
-                      <small>Degree</small>
-                      <p>B.S. Business Economics &middot; Jun 2023</p>
-                    </div>
-                    <div class="fact">
-                      <small>Based in</small>
-                      <p>San Francisco, CA</p>
-                    </div>
-                    <div class="fact">
-                      <small>Status</small>
-                      <p class="status-open">Open to work</p>
-                    </div>
-                  </div>
-                </aside>
-              </div>
-            </section>
-
-            <section
-              class="channel section-observed"
-              id="work-record"
-              data-channel-index="2"
-              aria-labelledby="work-title"
-              hidden
-            >
-              <div class="inner work-inner">
-                <p class="ey" id="work-title">03 &mdash; Work Record</p>
-                <div class="work-grid">
-                  <article class="card">
-                    <div class="logo-row">
-                      <div class="logo">
-                        <span class="logo-fallback">M</span>
-                        <img src="/marlo-logo.svg" alt="Marlo.Today" data-logo />
-                      </div>
-                      <div>
-                        <p class="work-date">2024 &mdash; Present</p>
-                        <h2>Marlo.Today</h2>
-                        <p class="work-role">BizOps Associate</p>
-                      </div>
-                    </div>
-                    <div class="stats" aria-label="Marlo.Today impact">
-                      <div class="stat"><strong>2K+</strong><span>Creators</span></div>
-                      <div class="stat"><strong>10K+</strong><span>Emails</span></div>
-                      <div class="stat"><strong>30+</strong><span>Cycles</span></div>
-                    </div>
-                    <ul class="bul">
-                      <li>
-                        Replaced 30+ manual reporting cycles with one unified GTM operating
-                        surface &mdash; eliminating weekly copy-paste overhead.
-                      </li>
-                      <li>
-                        Designed and operationalized a creator sourcing pipeline from scratch:
-                        stages, tracking layer, repeatable outreach at scale.
-                      </li>
-                      <li>
-                        Built a 10,000-email / 2,000-profile labeled dataset that improved ML
-                        model accuracy for creator-fit scoring, including Python scripts for
-                        data cleanup.
-                      </li>
-                    </ul>
-                  </article>
-
-                  <article class="card">
-                    <div class="logo-row">
-                      <div class="logo">
-                        <span class="logo-fallback logo-fallback-small">FW</span>
-                        <img
-                          src="/freewire-logo.svg"
-                          alt="Freewire Technologies"
-                          data-logo
-                        />
-                      </div>
-                      <div>
-                        <p class="work-date">2023</p>
-                        <h2>Freewire Technologies</h2>
-                        <p class="work-role">Supply Chain Analyst Intern</p>
-                      </div>
-                    </div>
-                    <div class="stats" aria-label="Freewire Technologies impact">
-                      <div class="stat"><strong>$30K+</strong><span>Discrepancy surfaced</span></div>
-                      <div class="stat"><strong>4</strong><span>Vendors audited</span></div>
-                    </div>
-                    <ul class="bul">
-                      <li>
-                        Audited multi-vendor procurement records and surfaced $30K+ in
-                        inventory discrepancies that had gone untracked &mdash; giving the ops
-                        team a clear remediation list for the first time.
-                      </li>
-                      <li>
-                        Rebuilt inventory tracking across procurement and fulfillment,
-                        replacing ad-hoc spreadsheets with a repeatable process.
-                      </li>
-                    </ul>
-                  </article>
-                </div>
-              </div>
-            </section>
-
-            <section
-              class="channel section-observed"
-              id="open-line"
-              data-channel-index="3"
-              aria-labelledby="contact-title"
-              hidden
-            >
-              <div class="inner contact-grid">
-                <div class="contact-main">
-                  <p class="ey">04 &mdash; Open Line</p>
-                  <h2 class="h2" id="contact-title">Let's talk.</h2>
-                  <p class="p">
-                    Looking for Strategy &amp; Operations, BizOps, or GTM Ops roles at
-                    early-stage companies.
-                  </p>
-                  <form
-                    class="form contact-inbox"
-                    action="/api/contact"
-                    method="POST"
-                    data-contact-form
-                    data-ph-no-capture
-                    novalidate
-                  >
-                    <input type="hidden" name="startedAt" value="" />
-                    <div class="contact-honey" hidden aria-hidden="true" inert>
-                      <label for="contact-website">Website</label>
-                      <input
-                        id="contact-website"
-                        name="website"
-                        type="text"
-                        tabindex="-1"
-                        autocomplete="off"
-                      />
-                    </div>
-                    <div class="row">
-                      <label class="field">
-                        <span>Name</span>
-                        <input
-                          class="input"
-                          name="name"
-                          autocomplete="name"
-                          placeholder="Your name"
-                          required
-                        />
-                      </label>
-                      <label class="field">
-                        <span>Email</span>
-                        <input
-                          class="input"
-                          name="email"
-                          type="email"
-                          autocomplete="email"
-                          placeholder="you@company.com"
-                          required
-                        />
-                      </label>
-                    </div>
-                    <label class="field">
-                      <span>Subject</span>
-                      <input
-                        class="input"
-                        name="subject"
-                        placeholder="Role, collaboration, or hello"
-                        required
-                      />
-                    </label>
-                    <label class="field">
-                      <span>Message</span>
-                      <textarea
-                        class="input"
-                        name="message"
-                        placeholder="Let me know how I can help"
-                        required
-                      ></textarea>
-                    </label>
-                    <div class="form-actions">
-                      <button class="btn primary" type="submit" data-contact-submit>
-                        Send message <span aria-hidden="true">&rarr;</span>
-                      </button>
-                      <p class="form-status" data-contact-status role="status" aria-live="polite"></p>
-                    </div>
-                  </form>
-                </div>
-
-                <aside class="icons" aria-label="Other ways to connect">
-                  <a
-                    class="icon-link"
-                    href="https://www.linkedin.com/in/benhxu2/"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span class="icon-link-main">
-                      <span class="icon-box" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z" />
-                          <rect x="2" y="9" width="4" height="12" />
-                          <circle cx="4" cy="4" r="2" />
-                        </svg>
-                      </span>
-                      <span>
-                        <strong>LinkedIn</strong>
-                        <small>benhxu2</small>
-                      </span>
-                    </span>
-                    <span aria-hidden="true">&nearr;</span>
-                  </a>
-                  <a
-                    class="icon-link"
-                    href="https://github.com/benhxu"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <span class="icon-link-main">
-                      <span class="icon-box" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                          <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                        </svg>
-                      </span>
-                      <span>
-                        <strong>GitHub</strong>
-                        <small>benhxu</small>
-                      </span>
-                    </span>
-                    <span aria-hidden="true">&nearr;</span>
-                  </a>
-                  <a
-                    class="icon-link"
-                    href="mailto:benwebportfolio@gmail.com?subject=Opportunity%20for%20Ben%20Xu&amp;body=Hi%20Ben%2C%0A%0AI%20came%20across%20your%20portfolio%20and%20wanted%20to%20reach%20out%20about..."
-                    data-email-link
-                  >
-                    <span class="icon-link-main">
-                      <span class="icon-box" aria-hidden="true">
-                        <svg viewBox="0 0 24 24">
-                          <rect x="2" y="4" width="20" height="16" rx="2" />
-                          <polyline points="22,6 12,13 2,6" />
-                        </svg>
-                      </span>
-                      <span>
-                        <strong>Email</strong>
-                        <small>Drafts instantly</small>
-                      </span>
-                    </span>
-                    <span aria-hidden="true">&nearr;</span>
-                  </a>
-                </aside>
-              </div>
-            </section>
-          </main>
-
-          <footer class="botbar">
-            <nav class="nav" aria-label="TV channels">
-              <button class="active" type="button" data-goto="0" aria-current="page">CH 01</button>
-              <button type="button" data-goto="1">CH 02</button>
-              <button type="button" data-goto="2">CH 03</button>
-              <button type="button" data-goto="3">CH 04</button>
-            </nav>
-            <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
-            <div class="hint">scroll &middot; swipe &middot; &larr; &rarr;</div>
-          </footer>
-        </div>
-
-        <aside class="tv-controls" aria-hidden="true">
-          <div class="speaker">
-            <span></span><span></span><span></span>
-            <span></span><span></span><span></span>
-            <span></span><span></span><span></span>
-          </div>
-          <div class="knob-stack">
-            <div class="dial-label">Channel</div>
-            <div class="knob" id="channelKnob"></div>
-            <div class="dial-label">Signal</div>
-            <div class="knob knob-signal"></div>
-          </div>
-          <div class="mini-led">On Air</div>
-          <div class="brand-plate">BX</div>
-        </aside>
+    <div class="broadcast-app">
+      <div class="ambient-grid" aria-hidden="true"></div>
+      <div class="signal-transition" data-signal-transition aria-hidden="true">
+        <span data-signal-label>CH 01</span>
       </div>
+
+      <header class="topbar">
+        <a class="brand" href="#home" data-goto="0" aria-label="Go to CH 01 Live Profile">
+          <span>BX</span>
+          <i aria-hidden="true"></i>
+        </a>
+        <div class="channel-status" aria-live="polite">
+          <span>ON AIR</span>
+          <strong id="chNum">01</strong>
+          <span id="chName">Live Profile</span>
+        </div>
+        <nav class="desktop-nav" aria-label="Primary channels">
+          <button class="active" type="button" data-goto="0" aria-current="page">
+            <span>CH 01</span>
+            Live Profile
+          </button>
+          <button type="button" data-goto="1">
+            <span>CH 02</span>
+            Systems Shipped
+          </button>
+          <button type="button" data-goto="2">
+            <span>CH 03</span>
+            Case Files
+          </button>
+          <button type="button" data-goto="3">
+            <span>CH 04</span>
+            Open Line
+          </button>
+        </nav>
+        <time class="clock" id="clock" aria-label="Current local time">00:00:00</time>
+      </header>
+
+      <main class="screen" id="screen">
+        <section
+          class="channel channel-hero section-observed"
+          id="signal"
+          data-channel-index="0"
+          aria-labelledby="hero-title"
+        >
+          <div class="hero-fragments" aria-hidden="true">
+            <span class="float-word">MANUAL OPS</span>
+            <span class="float-word">SIGNAL LOST</span>
+            <span class="float-word">GTM PIPELINE</span>
+            <span class="float-word">30+ REPORTS</span>
+            <span class="float-word">$30K DISCREPANCY</span>
+            <span class="float-word">SOURCE OF TRUTH</span>
+            <span class="float-word">10K+ RECORDS</span>
+            <span class="float-word">BEN XU</span>
+          </div>
+
+          <div class="hero">
+            <p class="eyebrow">CH 01 / Live Profile</p>
+            <h1 class="hero-name" id="hero-title" data-hero-line>BEN XU</h1>
+            <p class="hero-role" data-hero-line>OPERATOR WHO BUILDS SYSTEMS</p>
+            <p class="hero-lanes" data-hero-line>
+              Strategy &amp; Operations <span aria-hidden="true">&middot;</span> BizOps
+              <span aria-hidden="true">&middot;</span> GTM Ops
+            </p>
+            <p class="hero-tagline" data-hero-line>
+              I turn messy workflows into systems teams actually use.
+            </p>
+            <div class="hero-actions" data-hero-line>
+              <button class="btn primary" type="button" data-goto="1">
+                <span>CH 02</span>
+                Systems Shipped
+              </button>
+              <button class="btn" type="button" data-goto="3">
+                <span>CH 04</span>
+                Open Line
+              </button>
+            </div>
+          </div>
+
+          <aside class="hero-proof lower-third" aria-label="Signal proof">
+            <span>Signal locked</span>
+            <strong>Reporting / automation / operator systems</strong>
+          </aside>
+        </section>
+
+        <section
+          class="channel section-observed"
+          id="systems-shipped"
+          data-channel-index="1"
+          aria-labelledby="systems-title"
+          hidden
+        >
+          <div class="section-shell systems-shell">
+            <div class="section-heading">
+              <p class="eyebrow">CH 02 / Systems Shipped</p>
+              <h2 id="systems-title">Two operating environments. Same pattern.</h2>
+            </div>
+
+            <div class="work-grid">
+              <article class="work-card reveal-card">
+                <div class="work-header">
+                  <a
+                    class="company-logo marlo-logo"
+                    href="https://www.marlo.today/"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open Marlo.Today website"
+                  >
+                    <img src="/marlo-logo.svg" alt="Marlo.Today logo" data-logo />
+                  </a>
+                  <div>
+                    <p class="work-date">2024 &mdash; Present</p>
+                    <h3>BizOps Associate</h3>
+                    <p>Marlo.Today</p>
+                  </div>
+                </div>
+                <p class="work-summary">
+                  Built GTM reporting that replaced 30+ manual cycles and created cleaner
+                  operating visibility for the founding team.
+                </p>
+                <ul class="impact-list">
+                  <li>Unified messy GTM workflows into one reporting surface.</li>
+                  <li>Labeled 10K+ emails and enriched 2K+ creator profiles for ML workflows.</li>
+                  <li>Designed repeatable tracking for creator sourcing and outreach.</li>
+                </ul>
+                <div class="metric-strip">
+                  <span><strong>30+</strong> reporting cycles</span>
+                  <span><strong>10K+</strong> emails labeled</span>
+                  <span><strong>2K+</strong> profiles enriched</span>
+                </div>
+              </article>
+
+              <article class="work-card reveal-card">
+                <div class="work-header">
+                  <a
+                    class="company-logo"
+                    href="https://www.freewiretech.com/"
+                    target="_blank"
+                    rel="noreferrer"
+                    aria-label="Open Freewire Technologies website"
+                  >
+                    <img
+                      src="/freewire-logo.svg"
+                      alt="Freewire Technologies logo"
+                      data-logo
+                    />
+                  </a>
+                  <div>
+                    <p class="work-date">2023</p>
+                    <h3>Supply Chain Analyst Intern</h3>
+                    <p>Freewire Technologies</p>
+                  </div>
+                </div>
+                <p class="work-summary">
+                  Surfaced $30K+ in inventory discrepancies across multi-vendor operations,
+                  giving the team a clearer remediation path.
+                </p>
+                <ul class="impact-list">
+                  <li>Audited procurement records across multiple vendors and workflows.</li>
+                  <li>Rebuilt tracking around procurement and fulfillment exceptions.</li>
+                  <li>Improved visibility into inventory gaps before they became larger issues.</li>
+                </ul>
+                <div class="metric-strip">
+                  <span><strong>$30K+</strong> discrepancy surfaced</span>
+                  <span><strong>Multi-vendor</strong> supply chain</span>
+                  <span><strong>Ops</strong> visibility</span>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="channel section-observed"
+          id="case-files"
+          data-channel-index="2"
+          aria-labelledby="case-title"
+          hidden
+        >
+          <div class="section-shell case-shell">
+            <div class="section-heading">
+              <p class="eyebrow">CH 03 / Case Files</p>
+              <h2 id="case-title">Work highlights for the cube.</h2>
+            </div>
+
+            <div class="case-grid">
+              <article class="case-card reveal-card">
+                <span>01</span>
+                <h3>GTM Reporting Portal</h3>
+                <p>Client-facing reporting infrastructure for a faster operating cadence.</p>
+              </article>
+              <article class="case-card reveal-card">
+                <span>02</span>
+                <h3>Creator &amp; Agency Pipeline</h3>
+                <p>Repeatable sourcing, qualification, and outreach tracking for creator ops.</p>
+              </article>
+              <article class="case-card reveal-card">
+                <span>03</span>
+                <h3>Logistics Dashboard</h3>
+                <p>Procurement and inventory visibility across multi-vendor workflows.</p>
+              </article>
+              <article class="case-card reveal-card">
+                <span>04</span>
+                <h3>Python Automation</h3>
+                <p>Cleanup scripts and workflow automation for repetitive operational tasks.</p>
+              </article>
+              <article class="case-card reveal-card">
+                <span>05</span>
+                <h3>ML Email Labeling</h3>
+                <p>Labeled data foundation for creator-fit scoring and email classification.</p>
+              </article>
+              <article class="case-card reveal-card">
+                <span>06</span>
+                <h3>Contact / About</h3>
+                <p>A direct line for teams that need clearer systems and operating rhythm.</p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="channel section-observed"
+          id="open-line"
+          data-channel-index="3"
+          aria-labelledby="contact-title"
+          hidden
+        >
+          <div class="section-shell contact-shell">
+            <div class="contact-copy">
+              <p class="eyebrow">CH 04 / Open Line</p>
+              <h2 id="contact-title">Open to operations, systems, or strategy.</h2>
+              <p>
+                Send a note with the role, team, or problem space. I read every signal that
+                comes through.
+              </p>
+              <div class="contact-icons" aria-label="Other ways to connect">
+                <a
+                  class="icon-button"
+                  href="https://www.linkedin.com/in/benhxu2/"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open LinkedIn profile"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z" />
+                    <rect x="2" y="9" width="4" height="12" />
+                    <circle cx="4" cy="4" r="2" />
+                  </svg>
+                </a>
+                <a
+                  class="icon-button"
+                  href="https://github.com/benhxu"
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label="Open GitHub profile"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+                  </svg>
+                </a>
+                <a
+                  class="icon-button"
+                  href="mailto:benwebportfolio@gmail.com?subject=Opportunity%20for%20Ben%20Xu&amp;body=Hi%20Ben%2C%0A%0AI%20came%20across%20your%20portfolio%20and%20wanted%20to%20reach%20out%20about..."
+                  data-email-link
+                  aria-label="Email Ben Xu"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="4" width="20" height="16" rx="2" />
+                    <polyline points="22,6 12,13 2,6" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+
+            <form
+              class="form contact-inbox"
+              action="/api/contact"
+              method="POST"
+              data-contact-form
+              data-ph-no-capture
+              novalidate
+            >
+              <input type="hidden" name="startedAt" value="" />
+              <div class="contact-honey" hidden aria-hidden="true" inert>
+                <label for="contact-website">Website</label>
+                <input
+                  id="contact-website"
+                  name="website"
+                  type="text"
+                  tabindex="-1"
+                  autocomplete="off"
+                />
+              </div>
+              <div class="row">
+                <label class="field">
+                  <span>Name</span>
+                  <input
+                    class="input"
+                    name="name"
+                    autocomplete="name"
+                    placeholder="Your name"
+                    required
+                  />
+                </label>
+                <label class="field">
+                  <span>Email</span>
+                  <input
+                    class="input"
+                    name="email"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="you@company.com"
+                    required
+                  />
+                </label>
+              </div>
+              <label class="field">
+                <span>Subject</span>
+                <input
+                  class="input"
+                  name="subject"
+                  placeholder="What should we talk about?"
+                  required
+                />
+              </label>
+              <label class="field">
+                <span>Message</span>
+                <textarea
+                  class="input"
+                  name="message"
+                  placeholder="Let me know how I can help"
+                  required
+                ></textarea>
+              </label>
+              <div class="form-actions">
+                <button class="btn primary" type="submit" data-contact-submit>
+                  Send message <span aria-hidden="true">&rarr;</span>
+                </button>
+                <p class="form-status" data-contact-status role="status" aria-live="polite"></p>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+
+      <footer class="broadcast-footer">
+        <div class="ticker" aria-hidden="true">
+          <div class="ticker-copy">
+            <span>BXTV SIGNAL ASSEMBLY</span>
+            <span>REPORTING SYSTEMS</span>
+            <span>WORKFLOW AUTOMATION</span>
+            <span>OPERATOR INSTINCTS</span>
+            <span>DECISION SURFACES</span>
+          </div>
+        </div>
+        <nav class="mobile-nav" aria-label="Mobile channels">
+          <button class="active" type="button" data-goto="0" aria-current="page">
+            <strong>01</strong>
+            Live
+          </button>
+          <button type="button" data-goto="1">
+            <strong>02</strong>
+            Systems
+          </button>
+          <button type="button" data-goto="2">
+            <strong>03</strong>
+            Cases
+          </button>
+          <button type="button" data-goto="3">
+            <strong>04</strong>
+            Line
+          </button>
+        </nav>
+        <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
+      </footer>
     </div>
 
     <script type="module" src="/src/main.ts"></script>
