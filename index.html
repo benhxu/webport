@@ -22,7 +22,7 @@
     <meta property="og:image" content="https://webport-mu-seven.vercel.app/og-tv.png" />
     <meta
       property="og:image:alt"
-      content="Ben Xu portfolio presented as a premium broadcast interface"
+      content="Ben Xu portfolio presented as a premium signal assembly interface"
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Ben Xu — Strategy &amp; Operations" />
@@ -45,44 +45,31 @@
     <div class="broadcast-app">
       <div class="ambient-grid" aria-hidden="true"></div>
       <div class="signal-transition" data-signal-transition aria-hidden="true">
-        <span data-signal-label>CH 01</span>
+        <span data-signal-label>Home</span>
       </div>
 
       <header class="topbar">
-        <a class="brand" href="#home" data-goto="0" aria-label="Go to CH 01 Live Profile">
+        <a class="brand" href="#home" data-goto="0" aria-label="Go to landing page">
           <span>BX</span>
           <i aria-hidden="true"></i>
         </a>
-        <div class="channel-status" aria-live="polite">
-          <span>ON AIR</span>
-          <strong id="chNum">01</strong>
-          <span id="chName">Live Profile</span>
+        <div class="visually-hidden" aria-live="polite">
+          <span id="chNum">Home</span>
+          <span id="chName">Landing Page</span>
+          <time id="clock" aria-label="Current local time">00:00:00</time>
         </div>
-        <nav class="desktop-nav" aria-label="Primary channels">
-          <button class="active" type="button" data-goto="0" aria-current="page">
-            <span>CH 01</span>
-            Live Profile
-          </button>
-          <button type="button" data-goto="1">
-            <span>CH 02</span>
-            Systems Shipped
-          </button>
-          <button type="button" data-goto="2">
-            <span>CH 03</span>
-            Case Files
-          </button>
-          <button type="button" data-goto="3">
-            <span>CH 04</span>
-            Open Line
-          </button>
+        <nav class="desktop-nav" aria-label="Primary navigation">
+          <button type="button" data-goto="1">About</button>
+          <button type="button" data-goto="2">Experience</button>
+          <button type="button" data-goto="3">Contact</button>
         </nav>
-        <time class="clock" id="clock" aria-label="Current local time">00:00:00</time>
+        <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
       </header>
 
       <main class="screen" id="screen">
         <section
           class="channel channel-hero section-observed"
-          id="signal"
+          id="home"
           data-channel-index="0"
           aria-labelledby="hero-title"
         >
@@ -94,49 +81,109 @@
             <span class="float-word">$30K DISCREPANCY</span>
             <span class="float-word">SOURCE OF TRUTH</span>
             <span class="float-word">10K+ RECORDS</span>
+            <span class="float-word">COPY / PASTE</span>
+            <span class="float-word">MISSING OWNER</span>
+            <span class="float-word">WORKFLOW DEBT</span>
             <span class="float-word">BEN XU</span>
           </div>
 
           <div class="hero">
-            <p class="eyebrow">CH 01 / Live Profile</p>
-            <h1 class="hero-name" id="hero-title" data-hero-line>BEN XU</h1>
-            <p class="hero-role" data-hero-line>OPERATOR WHO BUILDS SYSTEMS</p>
-            <p class="hero-lanes" data-hero-line>
-              Strategy &amp; Operations <span aria-hidden="true">&middot;</span> BizOps
-              <span aria-hidden="true">&middot;</span> GTM Ops
+            <p class="eyebrow assemble-piece">Strategy &amp; Operations · BizOps · GTM Ops</p>
+            <h1 class="hero-name" id="hero-title" aria-label="Ben Xu">
+              <span class="assemble-piece">BEN</span>
+              <span class="assemble-piece">XU</span>
+            </h1>
+            <p class="hero-role" data-hero-line>
+              <span class="assemble-piece">OPERATOR</span>
+              <span class="assemble-piece">WHO</span>
+              <span class="assemble-piece">BUILDS</span>
+              <span class="assemble-piece">SYSTEMS</span>
             </p>
             <p class="hero-tagline" data-hero-line>
-              I turn messy workflows into systems teams actually use.
+              <span class="assemble-piece">I</span>
+              <span class="assemble-piece">turn</span>
+              <span class="assemble-piece">messy</span>
+              <span class="assemble-piece">workflows</span>
+              <span class="assemble-piece">into</span>
+              <span class="assemble-piece">systems</span>
+              <span class="assemble-piece">teams</span>
+              <span class="assemble-piece accent">actually</span>
+              <span class="assemble-piece accent">use.</span>
             </p>
             <div class="hero-actions" data-hero-line>
-              <button class="btn primary" type="button" data-goto="1">
-                <span>CH 02</span>
-                Systems Shipped
+              <button class="btn primary assemble-piece" type="button" data-goto="2">
+                Experience
               </button>
-              <button class="btn" type="button" data-goto="3">
-                <span>CH 04</span>
-                Open Line
+              <button class="btn assemble-piece" type="button" data-goto="3">
+                Contact
               </button>
             </div>
           </div>
 
           <aside class="hero-proof lower-third" aria-label="Signal proof">
-            <span>Signal locked</span>
-            <strong>Reporting / automation / operator systems</strong>
+            <span>Signal resolved</span>
+            <strong>Messy workflows become clear operating systems.</strong>
           </aside>
         </section>
 
         <section
           class="channel section-observed"
-          id="systems-shipped"
+          id="about"
           data-channel-index="1"
-          aria-labelledby="systems-title"
+          aria-labelledby="about-title"
           hidden
         >
-          <div class="section-shell systems-shell">
-            <div class="section-heading">
-              <p class="eyebrow">CH 02 / Systems Shipped</p>
-              <h2 id="systems-title">Two operating environments. Same pattern.</h2>
+          <div class="section-shell about-shell">
+            <div class="section-heading compact-heading">
+              <p class="eyebrow">About</p>
+              <h2 id="about-title">Operator instincts. Builder habits.</h2>
+            </div>
+
+            <div class="about-grid">
+              <div class="about-copy reveal-card">
+                <p>
+                  I am a business operator who likes messy, ambiguous workflows: the places
+                  where teams know the work matters, but the system around it has not caught
+                  up yet.
+                </p>
+                <p>
+                  My edge is turning that mess into usable infrastructure: reporting,
+                  automation, clean handoffs, and decision surfaces that help people move with
+                  less drag.
+                </p>
+              </div>
+              <div class="about-proof-grid">
+                <div class="proof-card reveal-card">
+                  <span>01</span>
+                  <strong>Find the source of truth</strong>
+                  <p>Turn scattered data into a shared operating picture.</p>
+                </div>
+                <div class="proof-card reveal-card">
+                  <span>02</span>
+                  <strong>Design the workflow</strong>
+                  <p>Make ownership, rhythm, and next steps easier to see.</p>
+                </div>
+                <div class="proof-card reveal-card">
+                  <span>03</span>
+                  <strong>Build what survives</strong>
+                  <p>Create systems teams can keep using after the first push.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section
+          class="channel section-observed"
+          id="experience"
+          data-channel-index="2"
+          aria-labelledby="experience-title"
+          hidden
+        >
+          <div class="section-shell experience-shell">
+            <div class="section-heading compact-heading">
+              <p class="eyebrow">Experience</p>
+              <h2 id="experience-title">Proof that the pattern repeats.</h2>
             </div>
 
             <div class="work-grid">
@@ -215,62 +262,14 @@
 
         <section
           class="channel section-observed"
-          id="case-files"
-          data-channel-index="2"
-          aria-labelledby="case-title"
-          hidden
-        >
-          <div class="section-shell case-shell">
-            <div class="section-heading">
-              <p class="eyebrow">CH 03 / Case Files</p>
-              <h2 id="case-title">Work highlights for the cube.</h2>
-            </div>
-
-            <div class="case-grid">
-              <article class="case-card reveal-card">
-                <span>01</span>
-                <h3>GTM Reporting Portal</h3>
-                <p>Client-facing reporting infrastructure for a faster operating cadence.</p>
-              </article>
-              <article class="case-card reveal-card">
-                <span>02</span>
-                <h3>Creator &amp; Agency Pipeline</h3>
-                <p>Repeatable sourcing, qualification, and outreach tracking for creator ops.</p>
-              </article>
-              <article class="case-card reveal-card">
-                <span>03</span>
-                <h3>Logistics Dashboard</h3>
-                <p>Procurement and inventory visibility across multi-vendor workflows.</p>
-              </article>
-              <article class="case-card reveal-card">
-                <span>04</span>
-                <h3>Python Automation</h3>
-                <p>Cleanup scripts and workflow automation for repetitive operational tasks.</p>
-              </article>
-              <article class="case-card reveal-card">
-                <span>05</span>
-                <h3>ML Email Labeling</h3>
-                <p>Labeled data foundation for creator-fit scoring and email classification.</p>
-              </article>
-              <article class="case-card reveal-card">
-                <span>06</span>
-                <h3>Contact / About</h3>
-                <p>A direct line for teams that need clearer systems and operating rhythm.</p>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section
-          class="channel section-observed"
-          id="open-line"
+          id="contact"
           data-channel-index="3"
           aria-labelledby="contact-title"
           hidden
         >
           <div class="section-shell contact-shell">
             <div class="contact-copy">
-              <p class="eyebrow">CH 04 / Open Line</p>
+              <p class="eyebrow">Contact</p>
               <h2 id="contact-title">Open to operations, systems, or strategy.</h2>
               <p>
                 Send a note with the role, team, or problem space. I read every signal that
@@ -385,37 +384,6 @@
           </div>
         </section>
       </main>
-
-      <footer class="broadcast-footer">
-        <div class="ticker" aria-hidden="true">
-          <div class="ticker-copy">
-            <span>BXTV SIGNAL ASSEMBLY</span>
-            <span>REPORTING SYSTEMS</span>
-            <span>WORKFLOW AUTOMATION</span>
-            <span>OPERATOR INSTINCTS</span>
-            <span>DECISION SURFACES</span>
-          </div>
-        </div>
-        <nav class="mobile-nav" aria-label="Mobile channels">
-          <button class="active" type="button" data-goto="0" aria-current="page">
-            <strong>01</strong>
-            Live
-          </button>
-          <button type="button" data-goto="1">
-            <strong>02</strong>
-            Systems
-          </button>
-          <button type="button" data-goto="2">
-            <strong>03</strong>
-            Cases
-          </button>
-          <button type="button" data-goto="3">
-            <strong>04</strong>
-            Line
-          </button>
-        </nav>
-        <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
-      </footer>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

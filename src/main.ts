@@ -31,21 +31,20 @@ declare global {
 }
 
 const channels = [
-  { number: "01", name: "Live Profile", sectionId: "signal", hash: "#home" },
-  { number: "02", name: "Systems Shipped", sectionId: "systems-shipped", hash: "#experience" },
-  { number: "03", name: "Case Files", sectionId: "case-files", hash: "#case-files" },
-  { number: "04", name: "Open Line", sectionId: "open-line", hash: "#contact" },
+  { number: "Home", name: "Landing Page", sectionId: "home", hash: "#home" },
+  { number: "About", name: "About", sectionId: "about", hash: "#about" },
+  { number: "Experience", name: "Experience", sectionId: "experience", hash: "#experience" },
+  { number: "Contact", name: "Contact", sectionId: "contact", hash: "#contact" },
 ] as const satisfies readonly ChannelDefinition[];
 
 const hashChannels: Record<string, number> = {
   "#": 0,
   "#home": 0,
-  "#signal": 0,
-  "#live-profile": 0,
-  "#about": 0,
-  "#experience": 1,
-  "#systems-shipped": 1,
-  "#work-record": 1,
+  "#landing": 0,
+  "#about": 1,
+  "#experience": 2,
+  "#systems-shipped": 2,
+  "#work-record": 2,
   "#case-files": 2,
   "#cases": 2,
   "#contact": 3,
@@ -73,7 +72,7 @@ const computeLowPowerMode = () => {
 
 const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
-  channel: "01 Live Profile",
+  channel: "Home Landing Page",
   max_channel_scroll: "0%",
   errors: 0,
 };
@@ -230,7 +229,7 @@ const clockElement = document.querySelector<HTMLElement>("#clock");
 const transitionOverlay = document.querySelector<HTMLElement>("[data-signal-transition]");
 const transitionLabel = document.querySelector<HTMLElement>("[data-signal-label]");
 const channelElements = Array.from(document.querySelectorAll<HTMLElement>(".channel"));
-const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>("button[data-goto]"));
+const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".desktop-nav button[data-goto]"));
 const gotoControls = Array.from(document.querySelectorAll<HTMLElement>("[data-goto]"));
 
 if (!screen || !fill || !chNum || !chName || channelElements.length !== channels.length) {
@@ -366,8 +365,8 @@ const setChannelState = (index: number) => {
   });
 
   const definition = channels[currentChannel];
-  chNum.textContent = definition?.number ?? "01";
-  chName.textContent = definition?.name ?? "Live Profile";
+  chNum.textContent = definition?.number ?? "Home";
+  chName.textContent = definition?.name ?? "Landing Page";
   updateHistory(currentChannel);
   updateDebugMetric("channel", `${definition?.number ?? ""} ${definition?.name ?? ""}`);
   setProgress(100);
@@ -385,6 +384,7 @@ const playChannelTransition = (channelLabel: string, nextState: () => void) =>
       return;
     }
 
+    screen.classList.add("is-resolving");
     transitionOverlay.classList.remove("active");
     void transitionOverlay.offsetWidth;
     transitionOverlay.classList.add("active");
@@ -395,6 +395,7 @@ const playChannelTransition = (channelLabel: string, nextState: () => void) =>
     globalThis.setTimeout(nextState, switchDelay);
     globalThis.setTimeout(() => {
       transitionOverlay.classList.remove("active");
+      screen.classList.remove("is-resolving");
       resolve();
     }, totalDelay);
   });
@@ -404,7 +405,7 @@ const go = async (index: number, source: ChannelSource = "nav") => {
   switching = true;
   flushChannelDwell("channel_exit");
   const nextChannel = channels[index];
-  await playChannelTransition(`CH ${nextChannel?.number ?? "01"}`, () => {
+  await playChannelTransition(nextChannel?.name ?? "Landing Page", () => {
     setChannelState(index);
   });
   channelDwellStartedAt = performance.now();
@@ -420,10 +421,12 @@ const initHeroMotion = () => {
   if (heroMotionStarted) return;
   heroMotionStarted = true;
 
-  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
+  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line], .lower-third");
+  const assemblePieces = gsap.utils.toArray<HTMLElement>(".assemble-piece");
   const floatWords = gsap.utils.toArray<HTMLElement>(".float-word");
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
+    gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(floatWords, { autoAlpha: 0.28, clearProps: "transform" });
     track("hero_assembly_completed", { duration_ms: 0 });
     return;
@@ -431,7 +434,14 @@ const initHeroMotion = () => {
 
   const mm = gsap.matchMedia();
   mm.add("(prefers-reduced-motion: no-preference)", () => {
-    gsap.set(heroLines, { autoAlpha: 0, y: 28, filter: "blur(10px)" });
+    gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
+    gsap.set(assemblePieces, {
+      autoAlpha: 0,
+      x: () => gsap.utils.random(-window.innerWidth * 0.38, window.innerWidth * 0.38),
+      y: () => gsap.utils.random(-window.innerHeight * 0.3, window.innerHeight * 0.3),
+      rotation: () => gsap.utils.random(-16, 16),
+      filter: "blur(10px)",
+    });
     gsap.set(floatWords, {
       autoAlpha: 0,
       scale: 0.94,
@@ -441,9 +451,7 @@ const initHeroMotion = () => {
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => {
-        track("hero_assembly_completed", { duration_ms: 2600 });
-      },
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 2900 }),
     });
 
     timeline
@@ -456,26 +464,32 @@ const initHeroMotion = () => {
         stagger: 0.06,
       })
       .to(
+        assemblePieces,
+        {
+          autoAlpha: 1,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          filter: "blur(0px)",
+          duration: 1.15,
+          ease: "expo.out",
+          stagger: {
+            each: 0.045,
+            from: "random",
+          },
+        },
+        "-=0.28",
+      )
+      .to(
         floatWords,
         {
           autoAlpha: 0.24,
-          x: () => gsap.utils.random(-10, 10),
-          y: () => gsap.utils.random(-8, 8),
-          duration: 0.8,
-          stagger: 0.035,
+          x: () => gsap.utils.random(-12, 12),
+          y: () => gsap.utils.random(-10, 10),
+          duration: 0.7,
+          stagger: 0.025,
         },
-        "-=0.15",
-      )
-      .to(
-        heroLines,
-        {
-          autoAlpha: 1,
-          y: 0,
-          filter: "blur(0px)",
-          duration: 0.78,
-          stagger: 0.12,
-        },
-        "-=0.45",
+        "-=0.86",
       );
 
     floatWords.forEach((word, index) => {
@@ -493,7 +507,7 @@ const initHeroMotion = () => {
 
     return () => {
       timeline.kill();
-      gsap.killTweensOf([...heroLines, ...floatWords]);
+      gsap.killTweensOf([...heroLines, ...assemblePieces, ...floatWords]);
     };
   });
 };
