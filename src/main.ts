@@ -329,7 +329,7 @@ const animateChannelEntry = (index: number) => {
   const channel = channelElements[index];
   if (!channel) return;
   const revealTargets = channel.querySelectorAll<HTMLElement>(
-    ".section-heading, .reveal-card, .contact-copy, .form, .proof-strip",
+    ".section-heading, .reveal-card, .contact-copy, .form",
   );
   if (!revealTargets.length) return;
 
@@ -423,14 +423,12 @@ const initHeroMotion = () => {
 
   const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
   const assemblePieces = gsap.utils.toArray<HTMLElement>(".assemble-piece");
-  const proofItems = gsap.utils.toArray<HTMLElement>(".proof-strip span");
   const signalLock = document.querySelector<HTMLElement>(".signal-lock");
   const signalText = signalLock?.querySelector<HTMLElement>("strong");
 
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
-    gsap.set(proofItems, { autoAlpha: 1, clearProps: "transform,filter" });
     signalLock?.classList.add("is-locked");
     if (signalText) signalText.textContent = "Signal locked";
     track("hero_assembly_completed", { duration_ms: 0 });
@@ -467,17 +465,12 @@ const initHeroMotion = () => {
       rotation: (index) => driftStates[index]?.rotation ?? 0,
       filter: "blur(1.2px)",
     });
-    gsap.set(proofItems, {
-      autoAlpha: 0,
-      y: 10,
-      filter: "blur(4px)",
-    });
     gsap.set(signalLock, { autoAlpha: 0, y: -8 });
     if (signalText) signalText.textContent = "Signal scattered";
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 2600 }),
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 4600 }),
     });
 
     timeline
@@ -494,10 +487,10 @@ const initHeroMotion = () => {
           y: (index) => driftStates[index]?.driftY ?? 0,
           rotation: (index) => driftStates[index]?.driftRotation ?? 0,
           filter: "blur(0.8px)",
-          duration: 0.95,
+          duration: 3,
           ease: "sine.inOut",
           stagger: {
-            amount: 0.22,
+            amount: 0.52,
             from: "random",
           },
         },
@@ -505,7 +498,7 @@ const initHeroMotion = () => {
       )
       .call(() => {
         if (signalText) signalText.textContent = "Signal locking";
-      }, undefined, 0.72)
+      }, undefined, 2.7)
       .to(
         assemblePieces,
         {
@@ -521,28 +514,17 @@ const initHeroMotion = () => {
             from: "random",
           },
         },
-        0.95,
+        3.05,
       )
       .call(() => {
         signalLock?.classList.add("is-locked");
         if (signalText) signalText.textContent = "Signal locked";
       }, undefined, "-=0.24")
-      .to(
-        proofItems,
-        {
-          autoAlpha: 1,
-          y: 0,
-          filter: "blur(0px)",
-          duration: 0.46,
-          stagger: 0.06,
-        },
-        "-=0.32",
-      )
       .set(assemblePieces, { clearProps: "transform,filter,opacity,visibility" });
 
     return () => {
       timeline.kill();
-      gsap.killTweensOf([...heroLines, ...assemblePieces, ...proofItems, signalLock].filter(Boolean));
+      gsap.killTweensOf([...heroLines, ...assemblePieces, signalLock].filter(Boolean));
     };
   });
 };
