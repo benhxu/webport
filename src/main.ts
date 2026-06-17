@@ -426,6 +426,7 @@ const initHeroMotion = () => {
   const proofItems = gsap.utils.toArray<HTMLElement>(".proof-strip span");
   const signalLock = document.querySelector<HTMLElement>(".signal-lock");
   const signalText = signalLock?.querySelector<HTMLElement>("strong");
+
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
@@ -439,12 +440,32 @@ const initHeroMotion = () => {
   const mm = gsap.matchMedia();
   mm.add("(prefers-reduced-motion: no-preference)", () => {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
+
+    const screenRect = screen.getBoundingClientRect();
+    const driftStates = assemblePieces.map((piece) => {
+      const pieceRect = piece.getBoundingClientRect();
+      const finalX = pieceRect.left - screenRect.left;
+      const finalY = pieceRect.top - screenRect.top;
+      const maxX = Math.max(18, screenRect.width - pieceRect.width - 18);
+      const maxY = Math.max(18, screenRect.height - pieceRect.height - 18);
+      const startX = gsap.utils.random(18, maxX);
+      const startY = gsap.utils.random(18, maxY);
+      return {
+        x: startX - finalX,
+        y: startY - finalY,
+        driftX: startX - finalX + gsap.utils.random(-34, 34),
+        driftY: startY - finalY + gsap.utils.random(-26, 26),
+        rotation: gsap.utils.random(-16, 16),
+        driftRotation: gsap.utils.random(-20, 20),
+      };
+    });
+
     gsap.set(assemblePieces, {
-      autoAlpha: 0,
-      x: () => gsap.utils.random(-window.innerWidth * 0.14, window.innerWidth * 0.14),
-      y: () => gsap.utils.random(-window.innerHeight * 0.1, window.innerHeight * 0.1),
-      rotation: () => gsap.utils.random(-5, 5),
-      filter: "blur(8px)",
+      autoAlpha: 0.88,
+      x: (index) => driftStates[index]?.x ?? 0,
+      y: (index) => driftStates[index]?.y ?? 0,
+      rotation: (index) => driftStates[index]?.rotation ?? 0,
+      filter: "blur(1.2px)",
     });
     gsap.set(proofItems, {
       autoAlpha: 0,
@@ -452,18 +473,39 @@ const initHeroMotion = () => {
       filter: "blur(4px)",
     });
     gsap.set(signalLock, { autoAlpha: 0, y: -8 });
+    if (signalText) signalText.textContent = "Signal scattered";
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 1650 }),
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 2600 }),
     });
 
     timeline
       .to(signalLock, {
         autoAlpha: 1,
         y: 0,
-        duration: 0.34,
+        duration: 0.28,
       })
+      .to(
+        assemblePieces,
+        {
+          autoAlpha: 1,
+          x: (index) => driftStates[index]?.driftX ?? 0,
+          y: (index) => driftStates[index]?.driftY ?? 0,
+          rotation: (index) => driftStates[index]?.driftRotation ?? 0,
+          filter: "blur(0.8px)",
+          duration: 0.95,
+          ease: "sine.inOut",
+          stagger: {
+            amount: 0.22,
+            from: "random",
+          },
+        },
+        0.08,
+      )
+      .call(() => {
+        if (signalText) signalText.textContent = "Signal locking";
+      }, undefined, 0.72)
       .to(
         assemblePieces,
         {
@@ -472,14 +514,14 @@ const initHeroMotion = () => {
           y: 0,
           rotation: 0,
           filter: "blur(0px)",
-          duration: 0.92,
+          duration: 1.18,
           ease: "expo.out",
           stagger: {
-            each: 0.035,
-            from: "start",
+            amount: 0.44,
+            from: "random",
           },
         },
-        "-=0.12",
+        0.95,
       )
       .call(() => {
         signalLock?.classList.add("is-locked");
@@ -495,7 +537,8 @@ const initHeroMotion = () => {
           stagger: 0.06,
         },
         "-=0.32",
-      );
+      )
+      .set(assemblePieces, { clearProps: "transform,filter,opacity,visibility" });
 
     return () => {
       timeline.kill();
