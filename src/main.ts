@@ -262,17 +262,6 @@ const renderCaseStudy = (caseStudy: CaseStudy) => {
   meta.append(period, company, role);
   topLine.append(logoLink, meta);
 
-  const artifactGrid = document.createElement("div");
-  artifactGrid.className = "case-artifact";
-  artifactGrid.setAttribute("aria-label", "Future artifact placeholders");
-  artifactGrid.append(
-    ...caseStudy.artifacts.map((artifact) => {
-      const item = document.createElement("span");
-      item.textContent = artifact;
-      return item;
-    }),
-  );
-
   const theme = document.createElement("p");
   theme.className = "case-theme";
   theme.textContent = caseStudy.theme;
@@ -291,13 +280,17 @@ const renderCaseStudy = (caseStudy: CaseStudy) => {
     proof.append(term, description);
   });
 
-  const button = document.createElement("button");
-  button.className = "case-link";
-  button.type = "button";
-  button.setAttribute("aria-disabled", "true");
-  button.textContent = "View case study";
+  const proofDetails = document.createElement("ul");
+  proofDetails.className = "case-details";
+  proofDetails.append(
+    ...caseStudy.proofDetails.map((detail) => {
+      const item = document.createElement("li");
+      item.textContent = detail;
+      return item;
+    }),
+  );
 
-  article.append(topLine, artifactGrid, theme, proof, button);
+  article.append(topLine, theme, proof, proofDetails);
 
   return article;
 };
@@ -644,15 +637,16 @@ const initHeroMotion = () => {
   const assemblePieces = gsap.utils
     .toArray<HTMLElement>(".assemble-piece")
     .filter((piece) => getComputedStyle(piece).display !== "none");
-  const signalLock = document.querySelector<HTMLElement>(".signal-lock");
-  const signalText = signalLock?.querySelector<HTMLElement>("strong");
   const lowPowerMode = computeLowPowerMode();
+
+  if (!assemblePieces.length) {
+    track("hero_assembly_completed", { duration_ms: 0 });
+    return;
+  }
 
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
-    signalLock?.classList.add("is-locked");
-    if (signalText) signalText.textContent = "Signal locked";
     track("hero_assembly_completed", { duration_ms: 0 });
     return;
   }
@@ -685,72 +679,58 @@ const initHeroMotion = () => {
     });
 
     gsap.set(assemblePieces, {
-      autoAlpha: 0.88,
+      autoAlpha: 0.34,
       x: (index) => driftStates[index]?.x ?? 0,
       y: (index) => driftStates[index]?.y ?? 0,
       rotation: (index) => driftStates[index]?.rotation ?? 0,
-      filter: "blur(1.2px)",
+      filter: "blur(2px)",
     });
-    gsap.set(signalLock, { autoAlpha: 0, y: -8 });
-    if (signalText) signalText.textContent = "Signal scattered";
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 4600 }),
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 3600 }),
     });
 
     timeline
-      .to(signalLock, {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.28,
-      })
       .to(
         assemblePieces,
         {
-          autoAlpha: 1,
+          autoAlpha: 0.42,
           x: (index) => driftStates[index]?.driftX ?? 0,
           y: (index) => driftStates[index]?.driftY ?? 0,
           rotation: (index) => driftStates[index]?.driftRotation ?? 0,
-          filter: "blur(0.8px)",
-          duration: 3,
+          filter: "blur(1px)",
+          duration: 2.2,
           ease: "sine.inOut",
           stagger: {
-            amount: 0.52,
+            amount: 0.28,
             from: "random",
           },
         },
-        0.08,
+        0.06,
       )
-      .call(() => {
-        if (signalText) signalText.textContent = "Signal locking";
-      }, undefined, 2.7)
       .to(
         assemblePieces,
         {
-          autoAlpha: 1,
+          autoAlpha: 0.16,
           x: 0,
           y: 0,
           rotation: 0,
-          filter: "blur(0px)",
-          duration: 1.18,
+          filter: "blur(0.4px)",
+          duration: 1.1,
           ease: "expo.out",
           stagger: {
-            amount: 0.44,
+            amount: 0.18,
             from: "random",
           },
         },
-        3.05,
+        2.35,
       )
-      .call(() => {
-        signalLock?.classList.add("is-locked");
-        if (signalText) signalText.textContent = "Signal locked";
-      }, undefined, "-=0.24")
-      .set(assemblePieces, { clearProps: "transform,filter,opacity,visibility" });
+      .set(assemblePieces, { clearProps: "transform,filter,visibility" });
 
     return () => {
       timeline.kill();
-      gsap.killTweensOf([...heroLines, ...assemblePieces, signalLock].filter(Boolean));
+      gsap.killTweensOf([...heroLines, ...assemblePieces]);
     };
   });
 };

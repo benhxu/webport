@@ -11,7 +11,7 @@ export type CaseStudy = {
   problem: string;
   built: string;
   impact: string;
-  artifacts: string[];
+  proofDetails: string[];
   logoSrc: string;
   logoAlt: string;
   website: string;
@@ -70,29 +70,21 @@ export const siteContent = {
     roleLabel: "Strategy & Operations · GTM Ops · Systems Builder",
     headline: "I turn messy operations into systems teams actually use.",
     subheadline:
-      "From supply chain to GTM to startup BizOps, I find where work breaks down — then build the dashboards, workflows, SOPs, and tools that make it run cleaner.",
-    primaryCta: "See the systems",
-    secondaryCta: "Contact me",
+      "From supply chain to GTM to startup BizOps, I find where work breaks down — then build the dashboards, workflows, and reporting systems that make it run cleaner.",
+    primaryCta: "View work",
+    secondaryCta: "Contact",
     signalWords: [
       "scattered data",
       "manual reporting",
       "unclear ownership",
-      "workflow debt",
       "GTM handoffs",
-      "inventory variance",
-      "stakeholder updates",
-      "source of truth",
-      "SOP rhythm",
-      "dashboard signal",
-      "creator pipeline",
-      "clean operating view",
+      "reporting gaps",
+      "clear system",
     ],
   },
   proofMetrics: [
+    { value: "30+", label: "hours manual reporting removed" },
     { value: "5,000+", label: "creators sourced" },
-    { value: "2,000+", label: "qualified leads sequenced" },
-    { value: "30%+", label: "outreach response rate" },
-    { value: "30+", label: "hours of manual reporting removed" },
     { value: "$30K", label: "inventory discrepancy identified" },
   ],
   caseStudies: [
@@ -102,15 +94,15 @@ export const siteContent = {
       period: "Jan–Jun 2025",
       theme: "GTM reporting system",
       problem:
-        "Creator campaign operations were fragmented across spreadsheets, notes, weekly updates, outreach tools, and client-facing reporting needs.",
+        "Creator campaign operations were fragmented across spreadsheets, notes, outreach tools, and weekly reporting.",
       built:
-        "Built a centralized reporting workflow for creator sourcing, outreach status, active partnerships, live assets, spend tracking, notes, and weekly client updates.",
+        "Built a centralized reporting workflow for sourcing, outreach status, partnerships, assets, spend, notes, and client updates.",
       impact:
-        "Reduced manual reporting workload, created cleaner weekly visibility, and helped the team manage creator partnerships with less operational drag.",
-      artifacts: [
-        "Dashboard screenshot placeholder",
-        "Workflow diagram placeholder",
-        "Before/after reporting flow placeholder",
+        "Reduced manual reporting drag and gave the team a cleaner weekly operating view.",
+      proofDetails: [
+        "5,000+ creators sourced",
+        "2,000+ leads sequenced",
+        "30+ hours removed",
       ],
       logoSrc: "/marlo-logo.svg",
       logoAlt: "Marlo.Today logo",
@@ -122,15 +114,15 @@ export const siteContent = {
       period: "Jun–Sep 2023",
       theme: "Supply chain visibility",
       problem:
-        "Logistics and inventory data were spread across Flexport, internal records, spreadsheets, and NetSuite.",
+        "Logistics and inventory data lived across Flexport, internal records, spreadsheets, and NetSuite.",
       built:
-        "Built a Power BI logistics dashboard, coordinated freight/RMAs/transfers, supported BOM and item master updates, and escalated inventory discrepancies.",
+        "Built a Power BI logistics dashboard, supported freight/RMAs/transfers, and escalated inventory discrepancies.",
       impact:
-        "Improved logistics visibility and identified approximately $30K in missing inventory through cross-checking physical count against NetSuite records.",
-      artifacts: [
-        "Power BI dashboard placeholder",
-        "Shipment flow placeholder",
-        "Inventory discrepancy story placeholder",
+        "Improved logistics visibility and identified approximately $30K in missing inventory.",
+      proofDetails: [
+        "$30K discrepancy identified",
+        "Power BI logistics visibility",
+        "Multi-vendor operations",
       ],
       logoSrc: "/freewire-logo.svg",
       logoAlt: "FreeWire Technologies logo",
@@ -138,13 +130,12 @@ export const siteContent = {
     },
   ],
   about: {
-    eyebrow: "02 — Profile",
-    headline: "Built by uncertainty.",
-    headlineAccent: "Driven by clarity.",
-    quote: "I learned early how to navigate systems that didn’t come with clear instructions.",
+    eyebrow: "Profile",
+    headline: "Operations from the floor.",
+    headlineAccent: "Systems for the team.",
+    quote: "I have seen operations from the floor, the warehouse, the spreadsheet, and the startup dashboard.",
     paragraphs: [
-      "I moved to America when I was one and was raised in San Francisco. As a first-generation college student, I became comfortable figuring things out without a perfect map.",
-      "That shows up in how I work now: I look for unclear handoffs, repeated manual work, and scattered information — then turn it into infrastructure teams can actually use.",
+      "I look for repeated manual work, unclear ownership, scattered information, and reporting gaps — then turn them into systems people can actually maintain.",
     ],
     facts: [
       { label: "Education", value: "UC San Diego · Rady School of Management" },
@@ -153,20 +144,20 @@ export const siteContent = {
       { label: "Focus", value: "Strategy & Ops · BizOps · GTM Ops" },
     ],
     originStory:
-      "I started in operations before I knew what to call it. Service work and my family’s blue-collar business taught me how quickly work breaks when ownership, sequencing, and visibility are unclear. Supply chain showed me the cost of bad data. Startup BizOps showed me how fast teams need lightweight systems before process debt takes over. I work in the gap between the spreadsheet and the system.",
+      "I started in operations before I knew what to call it. Service work and my family’s blue-collar business taught me how quickly work breaks when ownership, sequencing, and visibility are unclear.",
   },
   experience: {
-    eyebrow: "Systems I’ve Built",
-    title: "Proof-first operating systems, not a traditional timeline.",
+    eyebrow: "Selected Work",
+    title: "Two operating systems for messy work.",
     foundationTitle: "Operational foundation",
     foundationText:
-      "Before dashboards and GTM systems, I learned operations through service work and my family’s blue-collar business — where missed handoffs, unclear ownership, scheduling pressure, vendor coordination, and customer expectations show up immediately.",
+      "Before dashboards and GTM systems, I learned operations on the floor — through service work and my family’s blue-collar business. Missed handoffs, unclear ownership, vendor coordination, scheduling pressure, and customer expectations were not abstract problems. They showed up immediately. That is the foundation behind how I think about systems now.",
   },
   contact: {
     eyebrow: "Contact",
     title: "Let’s talk.",
     body:
-      "I’m open to BizOps, Strategy & Operations, GTM Ops, and systems-building roles where the work is ambiguous and the operating system still needs to be built.",
+      "I’m open to Strategy & Operations, GTM Ops, BizOps, and systems-building roles where the operating system still needs to be built.",
     fallbackEmail: "benwebportfolio@gmail.com",
   },
   socialLinks: [
