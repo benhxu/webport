@@ -329,7 +329,7 @@ const animateChannelEntry = (index: number) => {
   const channel = channelElements[index];
   if (!channel) return;
   const revealTargets = channel.querySelectorAll<HTMLElement>(
-    ".section-heading, .reveal-card, .contact-copy, .form, .lower-third",
+    ".section-heading, .reveal-card, .contact-copy, .form, .proof-strip",
   );
   if (!revealTargets.length) return;
 
@@ -421,13 +421,17 @@ const initHeroMotion = () => {
   if (heroMotionStarted) return;
   heroMotionStarted = true;
 
-  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line], .lower-third");
+  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
   const assemblePieces = gsap.utils.toArray<HTMLElement>(".assemble-piece");
-  const floatWords = gsap.utils.toArray<HTMLElement>(".float-word");
+  const proofItems = gsap.utils.toArray<HTMLElement>(".proof-strip span");
+  const signalLock = document.querySelector<HTMLElement>(".signal-lock");
+  const signalText = signalLock?.querySelector<HTMLElement>("strong");
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
-    gsap.set(floatWords, { autoAlpha: 0.28, clearProps: "transform" });
+    gsap.set(proofItems, { autoAlpha: 1, clearProps: "transform,filter" });
+    signalLock?.classList.add("is-locked");
+    if (signalText) signalText.textContent = "Signal locked";
     track("hero_assembly_completed", { duration_ms: 0 });
     return;
   }
@@ -437,31 +441,28 @@ const initHeroMotion = () => {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, {
       autoAlpha: 0,
-      x: () => gsap.utils.random(-window.innerWidth * 0.38, window.innerWidth * 0.38),
-      y: () => gsap.utils.random(-window.innerHeight * 0.3, window.innerHeight * 0.3),
-      rotation: () => gsap.utils.random(-16, 16),
-      filter: "blur(10px)",
+      x: () => gsap.utils.random(-window.innerWidth * 0.14, window.innerWidth * 0.14),
+      y: () => gsap.utils.random(-window.innerHeight * 0.1, window.innerHeight * 0.1),
+      rotation: () => gsap.utils.random(-5, 5),
+      filter: "blur(8px)",
     });
-    gsap.set(floatWords, {
+    gsap.set(proofItems, {
       autoAlpha: 0,
-      scale: 0.94,
-      x: () => gsap.utils.random(-24, 24),
-      y: () => gsap.utils.random(-18, 18),
+      y: 10,
+      filter: "blur(4px)",
     });
+    gsap.set(signalLock, { autoAlpha: 0, y: -8 });
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 2900 }),
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 1650 }),
     });
 
     timeline
-      .to(floatWords, {
-        autoAlpha: 0.62,
-        scale: 1,
-        x: 0,
+      .to(signalLock, {
+        autoAlpha: 1,
         y: 0,
-        duration: 0.9,
-        stagger: 0.06,
+        duration: 0.34,
       })
       .to(
         assemblePieces,
@@ -471,43 +472,34 @@ const initHeroMotion = () => {
           y: 0,
           rotation: 0,
           filter: "blur(0px)",
-          duration: 1.15,
+          duration: 0.92,
           ease: "expo.out",
           stagger: {
-            each: 0.045,
-            from: "random",
+            each: 0.035,
+            from: "start",
           },
         },
-        "-=0.28",
+        "-=0.12",
       )
+      .call(() => {
+        signalLock?.classList.add("is-locked");
+        if (signalText) signalText.textContent = "Signal locked";
+      }, undefined, "-=0.24")
       .to(
-        floatWords,
+        proofItems,
         {
-          autoAlpha: 0.24,
-          x: () => gsap.utils.random(-12, 12),
-          y: () => gsap.utils.random(-10, 10),
-          duration: 0.7,
-          stagger: 0.025,
+          autoAlpha: 1,
+          y: 0,
+          filter: "blur(0px)",
+          duration: 0.46,
+          stagger: 0.06,
         },
-        "-=0.86",
+        "-=0.32",
       );
-
-    floatWords.forEach((word, index) => {
-      gsap.to(word, {
-        x: `+=${index % 2 === 0 ? 16 : -14}`,
-        y: `+=${index % 3 === 0 ? -12 : 10}`,
-        rotation: index % 2 === 0 ? 1.5 : -1.5,
-        duration: 7 + index * 0.45,
-        ease: "sine.inOut",
-        repeat: -1,
-        yoyo: true,
-        delay: 1.6 + index * 0.08,
-      });
-    });
 
     return () => {
       timeline.kill();
-      gsap.killTweensOf([...heroLines, ...assemblePieces, ...floatWords]);
+      gsap.killTweensOf([...heroLines, ...assemblePieces, ...proofItems, signalLock].filter(Boolean));
     };
   });
 };
