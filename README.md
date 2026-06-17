@@ -1,17 +1,20 @@
 # Ben Xu Portfolio
 
-A Vite + TypeScript portfolio presented as a four-channel CRT television:
+A Vite + TypeScript portfolio presented as a premium four-section signal interface:
 
-- **CH 01 — Signal:** animated introduction
-- **CH 02 — Profile:** background and operating perspective
-- **CH 03 — Work Record:** Marlo.Today and Freewire Technologies impact
-- **CH 04 — Open Line:** contact form and social links
+- **Home:** messy operational signals resolve into a clear value proposition
+- **About:** background, operating perspective, and profile facts
+- **Experience:** proof-first systems/case studies for Marlo.Today and FreeWire Technologies
+- **Contact:** simple form, direct email fallback, and social links
 
 Production services:
 
 - Vercel for hosting and `/api/contact`
 - Resend for contact email delivery
 - PostHog for analytics and optional session replay
+
+Primary content now lives in `src/content/siteContent.ts` so copy and proof
+points can be updated without digging through rendering logic.
 
 ## Local development
 

@@ -25,8 +25,11 @@ type ApiResponse = {
   json: (body: Record<string, unknown>) => void;
 };
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000;
-const RATE_LIMIT_MAX_REQUESTS = 3;
+const PRIMARY_ALLOWED_ORIGIN = "https://webport-mu-seven.vercel.app";
+const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+// Temporary serverless-friendly fallback. This protects warm instances, but a
+// durable store such as Upstash Redis is the right upgrade for strict limits.
 const requestTimestamps = new Map<string, number[]>();
 
 const sendJson = (
@@ -51,6 +54,17 @@ const escapeHtml = (value: string) =>
 const isValidEmail = (value: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) && value.length <= 254;
 
+const getAllowedOrigins = () =>
+  new Set(
+    [
+      PRIMARY_ALLOWED_ORIGIN,
+      ...(process.env.CONTACT_ALLOWED_ORIGINS ?? "")
+        .split(",")
+        .map((origin) => origin.trim())
+        .filter(Boolean),
+    ].map((origin) => origin.replace(/\/$/, "")),
+  );
+
 const getHeader = (headers: ApiRequest["headers"], name: string) => {
   const value = headers[name] ?? headers[name.toLowerCase()];
   return Array.isArray(value) ? value[0] : value;
@@ -71,6 +85,46 @@ const readPayload = (body: unknown): ContactPayload | null => {
 
 const getClientIp = (headers: ApiRequest["headers"]) =>
   (getHeader(headers, "x-forwarded-for") ?? "unknown").split(",")[0]?.trim() || "unknown";
+
+const isAllowedOrigin = (origin: string) => {
+  try {
+    const { hostname, origin: normalizedOrigin } = new URL(origin);
+    if (getAllowedOrigins().has(normalizedOrigin)) return true;
+    if (
+      process.env.VERCEL_ENV !== "production" &&
+      (hostname === "localhost" || hostname === "127.0.0.1")
+    ) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+
+  return false;
+};
+
+const validatePayload = (payload: ContactPayload) => {
+  const name = clean(payload.name);
+  const email = clean(payload.email).toLowerCase();
+  const subject = clean(payload.subject);
+  const message = clean(payload.message);
+  const website = clean(payload.website);
+  const startedAt = Number(payload.startedAt ?? 0);
+
+  if (
+    !name ||
+    name.length > 100 ||
+    !isValidEmail(email) ||
+    !subject ||
+    subject.length > 160 ||
+    !message ||
+    message.length > 2_000
+  ) {
+    return null;
+  }
+
+  return { email, message, name, startedAt, subject, website };
+};
 
 const isRateLimited = (clientIp: string) => {
   const now = Date.now();
@@ -110,21 +164,13 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   }
 
   const origin = getHeader(request.headers, "origin");
-  const host = getHeader(request.headers, "host");
-  if (origin && host) {
-    try {
-      if (new URL(origin).host !== host) {
-        sendJson(response, { ok: false, error: "Invalid request origin." }, 403);
-        return;
-      }
-    } catch {
-      sendJson(response, { ok: false, error: "Invalid request origin." }, 403);
-      return;
-    }
+  if (!origin || !isAllowedOrigin(origin)) {
+    sendJson(response, { ok: false, error: "Invalid request." }, 403);
+    return;
   }
 
   const contentLength = Number(getHeader(request.headers, "content-length") ?? 0);
-  if (contentLength > 20_000) {
+  if (contentLength > 10_000) {
     sendJson(response, { ok: false, error: "Message is too large." }, 413);
     return;
   }
@@ -135,35 +181,22 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     return;
   }
 
-  const name = clean(payload.name);
-  const email = clean(payload.email).toLowerCase();
-  const subject = clean(payload.subject);
-  const message = clean(payload.message);
-  const website = clean(payload.website);
-  const startedAt = Number(payload.startedAt ?? 0);
+  const validatedPayload = validatePayload(payload);
+  if (!validatedPayload) {
+    sendJson(response, { ok: false, error: "Please check the form fields." }, 400);
+    return;
+  }
 
-  // Honeypot submissions receive a success response without sending email.
+  const { email, message, name, startedAt, subject, website } = validatedPayload;
+
   if (website) {
-    sendJson(response, { ok: true });
+    sendJson(response, { ok: false, error: "Invalid request." }, 400);
     return;
   }
 
   if (isRateLimited(getClientIp(request.headers))) {
     response.setHeader("Retry-After", String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
     sendJson(response, { ok: false, error: "Too many requests. Please try again later." }, 429);
-    return;
-  }
-
-  if (
-    !name ||
-    name.length > 100 ||
-    !isValidEmail(email) ||
-    !subject ||
-    subject.length > 160 ||
-    !message ||
-    message.length > 5_000
-  ) {
-    sendJson(response, { ok: false, error: "Please check the form fields." }, 400);
     return;
   }
 
@@ -177,7 +210,7 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const from = process.env.CONTACT_FROM_EMAIL ?? "Ben Xu Portfolio <onboarding@resend.dev>";
 
   if (!apiKey || !to) {
-    sendJson(response, { ok: false, error: "Contact delivery is not configured." }, 503);
+    sendJson(response, { ok: false, error: "Contact delivery is temporarily unavailable." }, 503);
     return;
   }
 

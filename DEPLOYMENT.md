@@ -15,6 +15,7 @@ Add these in Vercel under **Project Settings > Environment Variables**:
 RESEND_API_KEY                 — from resend.com dashboard
 CONTACT_TO_EMAIL               — email address that receives messages
 CONTACT_FROM_EMAIL             — Ben Xu Portfolio <onboarding@resend.dev>
+CONTACT_ALLOWED_ORIGINS        — https://webport-mu-seven.vercel.app plus custom domain
 VITE_CONTACT_FORM_ENDPOINT     — /api/contact
 VITE_POSTHOG_KEY               — PostHog project token
 VITE_POSTHOG_HOST              — https://us.i.posthog.com
@@ -22,6 +23,7 @@ VITE_POSTHOG_SESSION_REPLAY    — true
 ```
 
 Do not paste `RESEND_API_KEY` or `CONTACT_TO_EMAIL` into files committed to GitHub.
+Keep `CONTACT_ALLOWED_ORIGINS` comma-separated, with no trailing slash.
 
 ## Before launch
 

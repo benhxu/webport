@@ -52,8 +52,8 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 
 ## Suggested Dashboard
 
-1. Funnel: `site_loaded` -> `channel_viewed` with `channel = 03` ->
-   `cta_clicked` or `channel_viewed` with `channel = 04` ->
+1. Funnel: `site_loaded` -> `channel_viewed` with `channel = Experience` ->
+   `cta_clicked` or `channel_viewed` with `channel = Contact` ->
    `contact_form_submitted` -> `contact_form_success`.
 2. Trend: median `channel_dwell.duration_ms`, broken down by `name`.
 3. Funnel: `channel_scroll_depth` at `25` -> `50` -> `75` -> `100`.
