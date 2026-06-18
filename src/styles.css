@@ -551,6 +551,20 @@ h3 {
   display: block;
 }
 
+.experience-shell .compact-heading h2 {
+  max-width: 820px;
+  font-size: clamp(34px, 4.4vw, 64px);
+}
+
+.section-subtitle {
+  max-width: 620px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: clamp(15px, 1.35vw, 20px);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
