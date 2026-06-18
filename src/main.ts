@@ -1,6 +1,5 @@
 import { gsap } from "gsap";
 import Lenis from "lenis";
-import { siteContent, type CaseStudy, type SocialLink } from "./content/siteContent";
 
 const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT ?? "/api/contact";
 const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "";
@@ -204,207 +203,6 @@ const scheduleIdle = (callback: () => void, timeout = 500) => {
   }
   globalThis.setTimeout(callback, timeout);
 };
-
-const setText = (selector: string, value: string) => {
-  const element = document.querySelector<HTMLElement>(selector);
-  if (element) element.textContent = value;
-};
-
-const iconMarkup: Record<SocialLink["kind"], string> = {
-  linkedin: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z" />
-      <rect x="2" y="9" width="4" height="12" />
-      <circle cx="4" cy="4" r="2" />
-    </svg>
-  `,
-  github: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-    </svg>
-  `,
-  email: `
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <rect x="2" y="4" width="20" height="16" rx="2" />
-      <polyline points="22,6 12,13 2,6" />
-    </svg>
-  `,
-};
-
-const renderCaseStudy = (caseStudy: CaseStudy) => {
-  const article = document.createElement("article");
-  article.className = "case-study-card reveal-card";
-
-  const topLine = document.createElement("div");
-  topLine.className = "case-study-topline";
-
-  const logoLink = document.createElement("a");
-  logoLink.className = "company-logo";
-  logoLink.href = caseStudy.website;
-  logoLink.target = "_blank";
-  logoLink.rel = "noreferrer";
-  logoLink.setAttribute("aria-label", `Open ${caseStudy.company} website`);
-
-  const logo = document.createElement("img");
-  logo.src = caseStudy.logoSrc;
-  logo.alt = caseStudy.logoAlt;
-  logo.dataset.logo = "";
-  logoLink.append(logo);
-
-  const meta = document.createElement("div");
-  const period = document.createElement("p");
-  period.className = "work-date";
-  period.textContent = caseStudy.period;
-  const company = document.createElement("h3");
-  company.textContent = caseStudy.company;
-  const role = document.createElement("p");
-  role.textContent = caseStudy.role;
-  meta.append(period, company, role);
-  topLine.append(logoLink, meta);
-
-  const theme = document.createElement("p");
-  theme.className = "case-theme";
-  theme.textContent = caseStudy.theme;
-
-  const proof = document.createElement("dl");
-  proof.className = "case-proof";
-  ([
-    ["Problem", caseStudy.problem],
-    ["Built", caseStudy.built],
-    ["Impact", caseStudy.impact],
-  ] as const).forEach(([label, value]) => {
-    const term = document.createElement("dt");
-    term.textContent = label;
-    const description = document.createElement("dd");
-    description.textContent = value;
-    proof.append(term, description);
-  });
-
-  const proofDetails = document.createElement("ul");
-  proofDetails.className = "case-details";
-  proofDetails.append(
-    ...caseStudy.proofDetails.map((detail) => {
-      const item = document.createElement("li");
-      item.textContent = detail;
-      return item;
-    }),
-  );
-
-  article.append(topLine, theme, proof, proofDetails);
-
-  return article;
-};
-
-const renderSiteContent = () => {
-  setText("[data-hero-role]", siteContent.hero.roleLabel);
-  setText("[data-hero-headline]", siteContent.hero.headline);
-  setText("[data-hero-subheadline]", siteContent.hero.subheadline);
-  setText("[data-hero-primary-cta]", siteContent.hero.primaryCta);
-  setText("[data-hero-secondary-cta]", siteContent.hero.secondaryCta);
-  setText("[data-hero-name]", siteContent.hero.name);
-
-  const signalFragments = document.querySelector<HTMLElement>("[data-signal-fragments]");
-  if (signalFragments) {
-    signalFragments.replaceChildren(
-      ...siteContent.hero.signalWords.map((word) => {
-        const fragment = document.createElement("span");
-        fragment.className = "signal-fragment assemble-piece";
-        fragment.textContent = word;
-        return fragment;
-      }),
-    );
-  }
-
-  const proofMetrics = document.querySelector<HTMLElement>("[data-proof-metrics]");
-  if (proofMetrics) {
-    proofMetrics.replaceChildren(
-      ...siteContent.proofMetrics.map((metric) => {
-        const item = document.createElement("span");
-        const value = document.createElement("strong");
-        value.textContent = metric.value;
-        item.append(value, ` ${metric.label}`);
-        return item;
-      }),
-    );
-  }
-
-  setText("[data-about-eyebrow]", siteContent.about.eyebrow);
-  setText("[data-about-headline]", siteContent.about.headline);
-  setText("[data-about-headline-accent]", siteContent.about.headlineAccent);
-  setText("[data-about-quote]", `“${siteContent.about.quote}”`);
-
-  const paragraphs = document.querySelector<HTMLElement>("[data-about-paragraphs]");
-  if (paragraphs) {
-    paragraphs.replaceChildren(
-      ...siteContent.about.paragraphs.map((paragraph) => {
-        const element = document.createElement("p");
-        element.textContent = paragraph;
-        return element;
-      }),
-    );
-  }
-
-  const facts = document.querySelector<HTMLElement>("[data-about-facts]");
-  if (facts) {
-    facts.replaceChildren(
-      ...siteContent.about.facts.map((fact) => {
-        const card = document.createElement("div");
-        card.className = "fact-card";
-        const label = document.createElement("span");
-        label.textContent = fact.label;
-        const value = document.createElement("strong");
-        value.textContent = fact.value;
-        card.append(label, value);
-        return card;
-      }),
-    );
-  }
-
-  setText("[data-about-origin]", siteContent.about.originStory);
-  setText("[data-experience-eyebrow]", siteContent.experience.eyebrow);
-  setText("[data-experience-title]", siteContent.experience.title);
-
-  const caseStudyGrid = document.querySelector<HTMLElement>("[data-case-studies]");
-  caseStudyGrid?.replaceChildren(...siteContent.caseStudies.map(renderCaseStudy));
-
-  const foundation = document.querySelector<HTMLElement>("[data-foundation]");
-  if (foundation) {
-    const title = document.createElement("p");
-    title.className = "eyebrow";
-    title.textContent = siteContent.experience.foundationTitle;
-    const body = document.createElement("p");
-    body.textContent = siteContent.experience.foundationText;
-    foundation.replaceChildren(title, body);
-  }
-
-  setText("[data-contact-eyebrow]", siteContent.contact.eyebrow);
-  setText("[data-contact-title]", siteContent.contact.title);
-  setText("[data-contact-body]", siteContent.contact.body);
-  const fallbackEmail = document.querySelector<HTMLAnchorElement>("[data-contact-email]");
-  if (fallbackEmail) {
-    fallbackEmail.href = `mailto:${siteContent.contact.fallbackEmail}`;
-    fallbackEmail.textContent = siteContent.contact.fallbackEmail;
-  }
-
-  const socialLinks = document.querySelector<HTMLElement>("[data-social-links]");
-  if (socialLinks) {
-    socialLinks.replaceChildren(
-      ...siteContent.socialLinks.map((link) => {
-        const anchor = document.createElement("a");
-        anchor.className = "icon-button";
-        anchor.href = link.href;
-        anchor.target = link.kind === "email" ? "" : "_blank";
-        if (link.kind !== "email") anchor.rel = "noreferrer";
-        if (link.kind === "email") anchor.dataset.emailLink = "";
-        anchor.setAttribute("aria-label", link.label);
-        anchor.innerHTML = iconMarkup[link.kind];
-        return anchor;
-      }),
-    );
-  }
-};
-
-renderSiteContent();
 
 colorSchemeQuery.addEventListener("change", (event) => {
   updateDebugMetric("color_scheme", event.matches ? "light" : "dark");
@@ -634,19 +432,15 @@ const initHeroMotion = () => {
   heroMotionStarted = true;
 
   const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
-  const assemblePieces = gsap.utils
-    .toArray<HTMLElement>(".assemble-piece")
-    .filter((piece) => getComputedStyle(piece).display !== "none");
-  const lowPowerMode = computeLowPowerMode();
-
-  if (!assemblePieces.length) {
-    track("hero_assembly_completed", { duration_ms: 0 });
-    return;
-  }
+  const assemblePieces = gsap.utils.toArray<HTMLElement>(".assemble-piece");
+  const signalLock = document.querySelector<HTMLElement>(".signal-lock");
+  const signalText = signalLock?.querySelector<HTMLElement>("strong");
 
   if (reducedMotionQuery.matches) {
     gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
     gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
+    signalLock?.classList.add("is-locked");
+    if (signalText) signalText.textContent = "Signal locked";
     track("hero_assembly_completed", { duration_ms: 0 });
     return;
   }
@@ -664,73 +458,83 @@ const initHeroMotion = () => {
       const maxY = Math.max(18, screenRect.height - pieceRect.height - 18);
       const startX = gsap.utils.random(18, maxX);
       const startY = gsap.utils.random(18, maxY);
-      const driftX = lowPowerMode ? gsap.utils.random(-14, 14) : gsap.utils.random(-34, 34);
-      const driftY = lowPowerMode ? gsap.utils.random(-12, 12) : gsap.utils.random(-26, 26);
-      const rotation = lowPowerMode ? gsap.utils.random(-8, 8) : gsap.utils.random(-16, 16);
-      const driftRotation = lowPowerMode ? gsap.utils.random(-10, 10) : gsap.utils.random(-20, 20);
       return {
         x: startX - finalX,
         y: startY - finalY,
-        driftX: startX - finalX + driftX,
-        driftY: startY - finalY + driftY,
-        rotation,
-        driftRotation,
+        driftX: startX - finalX + gsap.utils.random(-34, 34),
+        driftY: startY - finalY + gsap.utils.random(-26, 26),
+        rotation: gsap.utils.random(-16, 16),
+        driftRotation: gsap.utils.random(-20, 20),
       };
     });
 
     gsap.set(assemblePieces, {
-      autoAlpha: 0.34,
+      autoAlpha: 0.88,
       x: (index) => driftStates[index]?.x ?? 0,
       y: (index) => driftStates[index]?.y ?? 0,
       rotation: (index) => driftStates[index]?.rotation ?? 0,
-      filter: "blur(2px)",
+      filter: "blur(1.2px)",
     });
+    gsap.set(signalLock, { autoAlpha: 0, y: -8 });
+    if (signalText) signalText.textContent = "Signal scattered";
 
     const timeline = gsap.timeline({
       defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 3600 }),
+      onComplete: () => track("hero_assembly_completed", { duration_ms: 4600 }),
     });
 
     timeline
+      .to(signalLock, {
+        autoAlpha: 1,
+        y: 0,
+        duration: 0.28,
+      })
       .to(
         assemblePieces,
         {
-          autoAlpha: 0.42,
+          autoAlpha: 1,
           x: (index) => driftStates[index]?.driftX ?? 0,
           y: (index) => driftStates[index]?.driftY ?? 0,
           rotation: (index) => driftStates[index]?.driftRotation ?? 0,
-          filter: "blur(1px)",
-          duration: 2.2,
+          filter: "blur(0.8px)",
+          duration: 3,
           ease: "sine.inOut",
           stagger: {
-            amount: 0.28,
+            amount: 0.52,
             from: "random",
           },
         },
-        0.06,
+        0.08,
       )
+      .call(() => {
+        if (signalText) signalText.textContent = "Signal locking";
+      }, undefined, 2.7)
       .to(
         assemblePieces,
         {
-          autoAlpha: 0.16,
+          autoAlpha: 1,
           x: 0,
           y: 0,
           rotation: 0,
-          filter: "blur(0.4px)",
-          duration: 1.1,
+          filter: "blur(0px)",
+          duration: 1.18,
           ease: "expo.out",
           stagger: {
-            amount: 0.18,
+            amount: 0.44,
             from: "random",
           },
         },
-        2.35,
+        3.05,
       )
-      .set(assemblePieces, { clearProps: "transform,filter,visibility" });
+      .call(() => {
+        signalLock?.classList.add("is-locked");
+        if (signalText) signalText.textContent = "Signal locked";
+      }, undefined, "-=0.24")
+      .set(assemblePieces, { clearProps: "transform,filter,opacity,visibility" });
 
     return () => {
       timeline.kill();
-      gsap.killTweensOf([...heroLines, ...assemblePieces]);
+      gsap.killTweensOf([...heroLines, ...assemblePieces, signalLock].filter(Boolean));
     };
   });
 };
