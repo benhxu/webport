@@ -419,22 +419,23 @@ h3 {
 .hero-name {
   display: flex;
   flex-wrap: wrap;
-  gap: clamp(12px, 2.3vw, 30px);
-  color: var(--text);
-  font-size: clamp(78px, 12.2vw, 178px);
+  gap: clamp(8px, 1.1vw, 16px);
+  color: var(--soft);
+  font-size: clamp(30px, 4vw, 58px);
   font-weight: 700;
-  line-height: 0.78;
-  letter-spacing: -0.055em;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
   text-transform: uppercase;
 }
 
 .hero-role {
-  margin-top: clamp(18px, 2vw, 30px);
-  color: var(--gold);
-  font-size: clamp(28px, 4.5vw, 72px);
+  margin-top: clamp(14px, 1.6vw, 24px);
+  color: var(--text);
+  font-size: clamp(54px, 8.4vw, 126px);
   font-weight: 700;
-  line-height: 0.98;
-  letter-spacing: -0.045em;
+  line-height: 0.84;
+  letter-spacing: -0.06em;
+  text-transform: uppercase;
 }
 
 .hero-lanes {
@@ -1155,13 +1156,13 @@ textarea.input {
   }
 
   .hero-name {
-    font-size: clamp(72px, 23vw, 132px);
+    font-size: clamp(30px, 9vw, 54px);
   }
 
   .hero-role {
     max-width: 660px;
-    font-size: clamp(15px, 4vw, 24px);
-    line-height: 1.35;
+    font-size: clamp(48px, 15vw, 96px);
+    line-height: 0.86;
   }
 
   .hero-lanes {
@@ -1356,7 +1357,11 @@ textarea.input {
   }
 
   .hero-name {
-    font-size: clamp(72px, 11vw, 132px);
+    font-size: clamp(28px, 3.6vw, 52px);
+  }
+
+  .hero-role {
+    font-size: clamp(48px, 7.4vw, 108px);
   }
 
   .hero-positioning,
