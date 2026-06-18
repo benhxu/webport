@@ -349,7 +349,7 @@
               data-ph-no-capture
               novalidate
             >
-              <input type="hidden" name="startedAt" value="" />
+              <input type="hidden" name="startedAt" value="" data-ph-no-capture />
               <div class="contact-honey" hidden aria-hidden="true" inert>
                 <label for="contact-website">Website</label>
                 <input
@@ -358,6 +358,7 @@
                   type="text"
                   tabindex="-1"
                   autocomplete="off"
+                  data-ph-no-capture
                 />
               </div>
               <div class="row">
@@ -368,6 +369,7 @@
                     name="name"
                     autocomplete="name"
                     placeholder="Your name"
+                    data-ph-no-capture
                     required
                   />
                 </label>
@@ -379,6 +381,7 @@
                     type="email"
                     autocomplete="email"
                     placeholder="you@company.com"
+                    data-ph-no-capture
                     required
                   />
                 </label>
@@ -389,6 +392,7 @@
                   class="input"
                   name="subject"
                   placeholder="What should we talk about?"
+                  data-ph-no-capture
                   required
                 />
               </label>
@@ -398,6 +402,7 @@
                   class="input"
                   name="message"
                   placeholder="Let me know how I can help"
+                  data-ph-no-capture
                   required
                 ></textarea>
               </label>

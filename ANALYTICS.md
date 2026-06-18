@@ -2,7 +2,8 @@
 
 PostHog is the production analytics provider. The site records channel interest,
 active reading time, interaction intent, form conversion, performance, and
-runtime errors without capturing contact-form values.
+runtime errors without capturing contact-form values. PostHog autocapture is
+disabled; the app only sends explicit custom events.
 
 ## Connect PostHog
 
@@ -37,6 +38,7 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | `ui_clicked` | `channel`, `tag`, `label`, `href`, `id` | What controls and links were used? |
 | `email_icon_clicked` | none | Did a visitor choose the prefilled email route? |
 | `outbound_link_clicked` | `destination`, `label` | Did visitors choose LinkedIn or GitHub? |
+| `contact_form_started` | none | Did a visitor begin engaging with the contact form? |
 | `contact_form_submitted` | `has_name`, `has_email` | How many visitors attempted to submit? |
 | `contact_form_success` | none | How many submissions were accepted by the contact API? |
 | `contact_form_error` | `status` | Where are contact attempts failing? |
@@ -45,8 +47,9 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | `engagement_heartbeat` | `visible_duration_ms`, `active_channel`, `channel_scroll_depth`, `scrolled` | Was the visitor still actively viewing the site? |
 | `page_hidden` / `page_visible` | visibility duration and active channel | How much of a session was genuinely visible? |
 | `session_ended` | total and visible duration, final channel | How long did the visit last and where did it end? |
+| `performance_context` | hardware and low-power context | What kind of device did the visitor use? |
 | `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
-| `resource_summary` | resource, script, image, and transfer counts | How heavy was the page for the visitor? |
+| `resource_summary` | resource, script, image, font, and transfer counts | How heavy was the page for the visitor? |
 | `web_vitals` | `lcp_ms`, `cls`, `inp_ms`, long-task values | Did visitors experience layout shift or interaction lag? |
 | `client_error` | `type` | Did the browser encounter a runtime failure? |
 

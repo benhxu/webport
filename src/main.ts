@@ -116,6 +116,12 @@ const buildAnalyticsPayload = (eventName: string, payload: TrackPayload = {}) =>
   ...payload,
 });
 
+const getAnalyticsProviderName = () => {
+  if (POSTHOG_KEY) return "posthog";
+  if (ANALYTICS_ENDPOINT) return "custom_endpoint";
+  return "none";
+};
+
 const pendingAnalyticsEvents: Array<{ eventName: string; payload: TrackPayload }> = [];
 
 const track = (eventName: string, payload: TrackPayload = {}) => {
@@ -166,7 +172,7 @@ const initAnalyticsProvider = async () => {
       api_host: POSTHOG_HOST,
       capture_pageview: true,
       capture_pageleave: true,
-      autocapture: true,
+      autocapture: false,
       debug: DEBUG_MODE,
       disable_session_recording: !POSTHOG_SESSION_REPLAY,
       person_profiles: "identified_only",
@@ -542,6 +548,11 @@ const initHeroMotion = () => {
 setChannelState(currentChannel);
 setProgress(100);
 initHeroMotion();
+track("site_loaded", {
+  pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
+  reduced_motion: reducedMotionQuery.matches,
+  analytics_provider: getAnalyticsProviderName(),
+});
 track("channel_viewed", {
   channel: channels[currentChannel]?.number ?? String(currentChannel),
   name: channels[currentChannel]?.name ?? "",
@@ -706,6 +717,14 @@ const initContactForm = () => {
   const resetStartedAt = () => {
     if (startedAtField) startedAtField.value = String(Date.now());
   };
+  let formStartTracked = false;
+
+  const markFormStarted = () => {
+    if (formStartTracked) return;
+    formStartTracked = true;
+    resetStartedAt();
+    track("contact_form_started");
+  };
 
   const setStatus = (message: string, type: "idle" | "success" | "error" = "idle") => {
     status.textContent = message;
@@ -714,10 +733,12 @@ const initContactForm = () => {
     if (type === "error") status.classList.add("is-error");
   };
 
-  resetStartedAt();
+  form.addEventListener("focusin", markFormStarted, { once: true });
+  form.addEventListener("input", markFormStarted, { once: true });
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    if (!startedAtField?.value) resetStartedAt();
     const formData = new FormData(form);
     track("contact_form_submitted", {
       has_name: Boolean(String(formData.get("name") ?? "").trim()),
@@ -727,6 +748,7 @@ const initContactForm = () => {
     if (!form.checkValidity()) {
       form.reportValidity();
       setStatus("Please complete the required fields.", "error");
+      track("contact_form_error", { status: "validation" });
       return;
     }
 
@@ -909,6 +931,40 @@ const initPerformanceAnalytics = () => {
 
 initPerformanceAnalytics();
 
+const trackLoadPerformance = () => {
+  const navigation = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+
+  if (navigation) {
+    track("performance_timing", {
+      dom_content_loaded_ms: Math.round(
+        navigation.domContentLoadedEventEnd - navigation.startTime,
+      ),
+      load_event_ms: Math.round(navigation.loadEventEnd - navigation.startTime),
+      response_end_ms: Math.round(navigation.responseEnd - navigation.startTime),
+      transfer_size: navigation.transferSize || 0,
+      encoded_body_size: navigation.encodedBodySize || 0,
+    });
+  }
+
+  const resources = performance.getEntriesByType("resource") as PerformanceResourceTiming[];
+  const scripts = resources.filter((resource) => resource.initiatorType === "script");
+  const styles = resources.filter((resource) => resource.initiatorType === "link" || resource.initiatorType === "css");
+  const images = resources.filter((resource) => resource.initiatorType === "img");
+  const fonts = resources.filter((resource) => resource.initiatorType === "css" || resource.name.includes("fonts.gstatic.com"));
+  const totalTransfer = resources.reduce((sum, resource) => sum + (resource.transferSize || 0), 0);
+
+  track("resource_summary", {
+    resource_count: resources.length,
+    script_count: scripts.length,
+    stylesheet_count: styles.length,
+    image_count: images.length,
+    font_count: fonts.length,
+    transfer_size: Math.round(totalTransfer),
+  });
+};
+
 let visibleStartedAt: number | null =
   document.visibilityState === "visible" ? performance.now() : null;
 let visibleDurationMs = 0;
@@ -968,6 +1024,7 @@ window.addEventListener("pagehide", () => {
 window.addEventListener("load", () => {
   window.requestAnimationFrame(syncChannelScroller);
   scheduleIdle(initAnalyticsProvider, 900);
+  scheduleIdle(trackLoadPerformance, 1200);
   scheduleIdle(() => {
     track("performance_context", {
       hardware_concurrency: navigator.hardwareConcurrency || null,
