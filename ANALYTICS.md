@@ -1,6 +1,6 @@
 # Portfolio Analytics
 
-PostHog is the production analytics provider. The site records section interest,
+PostHog is the production analytics provider. The site records channel interest,
 active reading time, interaction intent, form conversion, performance, and
 runtime errors without capturing contact-form values. PostHog autocapture is
 disabled; the app only sends explicit custom events.
@@ -29,12 +29,13 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | Event | Properties | What it answers |
 | --- | --- | --- |
 | `site_loaded` | `pointer`, `reduced_motion`, `analytics_provider` | Which devices and accessibility preferences visit? |
-| `section_viewed` | `section`, `name`, `source` | Which sections received attention, and how did visitors reach them? |
-| `section_dwell` | `section`, `name`, `duration_ms`, `max_scroll_depth`, `reason` | How long did visitors actively spend in each section? |
-| `scroll_depth_reached` | `depth_percent`, `active_section` | How far did visitors move through the page? |
-| `hero_signal_settled` | `duration_ms` | Did the lightweight hero signal animation finish? |
-| `cta_clicked` | `location`, `label` | Which hero CTA generated intent? |
-| `ui_clicked` | `active_section`, `tag`, `label`, `href`, `id` | What controls and links were used? |
+| `channel_viewed` | `channel`, `name`, `source` | Which channels are opened, and how did visitors reach them? |
+| `channel_dwell` | `channel`, `name`, `duration_ms`, `max_scroll_depth`, `scrolled`, `reason` | How long did visitors actively spend with each channel? |
+| `channel_scroll_started` | `channel` | Did a visitor begin reading overflow content? |
+| `channel_scroll_depth` | `channel`, `depth_percent` | How far did visitors read inside longer mobile channels? |
+| `hero_assembly_completed` | `duration_ms` | Did the signature landing animation finish? |
+| `cta_clicked` | `location`, `target_channel` | Which landing CTA generated intent? |
+| `ui_clicked` | `channel`, `tag`, `label`, `href`, `id` | What controls and links were used? |
 | `email_icon_clicked` | none | Did a visitor choose the prefilled email route? |
 | `outbound_link_clicked` | `destination`, `label` | Did visitors choose LinkedIn or GitHub? |
 | `contact_form_started` | none | Did a visitor begin engaging with the contact form? |
@@ -43,9 +44,9 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | `contact_form_error` | `status` | Where are contact attempts failing? |
 | `contact_field_focused` | `field` | Where does form engagement begin? |
 | `contact_field_completed` | `field`, `has_value` | At which field do visitors abandon? |
-| `engagement_heartbeat` | `visible_duration_ms`, `active_section`, `scroll_depth` | Was the visitor still actively viewing the site? |
-| `page_hidden` / `page_visible` | visibility duration and active section | How much of a session was genuinely visible? |
-| `session_ended` | total and visible duration, final section | How long did the visit last and where did it end? |
+| `engagement_heartbeat` | `visible_duration_ms`, `active_channel`, `channel_scroll_depth`, `scrolled` | Was the visitor still actively viewing the site? |
+| `page_hidden` / `page_visible` | visibility duration and active channel | How much of a session was genuinely visible? |
+| `session_ended` | total and visible duration, final channel | How long did the visit last and where did it end? |
 | `performance_context` | hardware and low-power context | What kind of device did the visitor use? |
 | `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
 | `resource_summary` | resource, script, image, font, and transfer counts | How heavy was the page for the visitor? |
@@ -54,12 +55,12 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 
 ## Suggested Dashboard
 
-1. Funnel: `site_loaded` -> `section_viewed` with `section = work` ->
-   `cta_clicked` or `section_viewed` with `section = contact` ->
+1. Funnel: `site_loaded` -> `channel_viewed` with `channel = Experience` ->
+   `cta_clicked` or `channel_viewed` with `channel = Contact` ->
    `contact_form_submitted` -> `contact_form_success`.
-2. Trend: median `section_dwell.duration_ms`, broken down by `name`.
-3. Funnel: `scroll_depth_reached` at `25` -> `50` -> `75` -> `100`.
-4. Trend: `section_viewed`, broken down by `source`.
+2. Trend: median `channel_dwell.duration_ms`, broken down by `name`.
+3. Funnel: `channel_scroll_depth` at `25` -> `50` -> `75` -> `100`.
+4. Trend: `channel_viewed`, broken down by `source`.
 5. Trend: `email_icon_clicked` and `outbound_link_clicked`.
 6. Trend: `contact_form_error`, broken down by `status`.
 7. Performance: p75 `web_vitals.lcp_ms`, `web_vitals.inp_ms`, and
