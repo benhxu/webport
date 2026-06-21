@@ -1,5 +1,4 @@
-import { gsap } from "gsap";
-import Lenis from "lenis";
+import { siteContent } from "./content/siteContent";
 
 const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT ?? "/api/contact";
 const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "";
@@ -10,17 +9,16 @@ const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === 
 const sessionStartedAt = performance.now();
 const colorSchemeQuery = window.matchMedia("(prefers-color-scheme: light)");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+const sectionDefinitions = siteContent.sections;
+const knownSectionIds = new Set<string>(sectionDefinitions.map((section) => section.id));
+const getHashSectionId = () => {
+  const sectionId = window.location.hash.replace(/^#/, "");
+  return knownSectionIds.has(sectionId) ? sectionId : null;
+};
+const initialActiveSectionId = getHashSectionId() ?? "home";
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
-type ChannelSource = "nav" | "hero_cta" | "wheel" | "touch" | "keyboard" | "hash";
-
-type ChannelDefinition = {
-  number: string;
-  name: string;
-  sectionId: string;
-  hash: string;
-};
 
 declare global {
   interface Window {
@@ -29,27 +27,6 @@ declare global {
     };
   }
 }
-
-const channels = [
-  { number: "Home", name: "Landing Page", sectionId: "home", hash: "#home" },
-  { number: "About", name: "About", sectionId: "about", hash: "#about" },
-  { number: "Experience", name: "Experience", sectionId: "experience", hash: "#experience" },
-  { number: "Contact", name: "Contact", sectionId: "contact", hash: "#contact" },
-] as const satisfies readonly ChannelDefinition[];
-
-const hashChannels: Record<string, number> = {
-  "#": 0,
-  "#home": 0,
-  "#landing": 0,
-  "#about": 1,
-  "#experience": 2,
-  "#systems-shipped": 2,
-  "#work-record": 2,
-  "#case-files": 2,
-  "#cases": 2,
-  "#contact": 3,
-  "#open-line": 3,
-};
 
 const sessionId = (() => {
   const storageKey = "ben_xu_portfolio_session_id";
@@ -62,18 +39,22 @@ const sessionId = (() => {
 
 const computeLowPowerMode = () => {
   const isMobile = window.matchMedia("(max-width: 760px)").matches;
-  const reducedMotion = reducedMotionQuery.matches;
   const hardwareConcurrency = navigator.hardwareConcurrency || 8;
   const deviceMemory = "deviceMemory" in navigator
     ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
     : 0;
-  return isMobile || reducedMotion || hardwareConcurrency <= 4 || (deviceMemory > 0 && deviceMemory <= 4);
+  return (
+    isMobile ||
+    reducedMotionQuery.matches ||
+    hardwareConcurrency <= 4 ||
+    (deviceMemory > 0 && deviceMemory <= 4)
+  );
 };
 
 const debugMetrics: Record<string, DebugValue> = {
   low_power_mode: computeLowPowerMode(),
-  channel: "Home Landing Page",
-  max_channel_scroll: "0%",
+  active_section: initialActiveSectionId,
+  max_scroll_depth: "0%",
   errors: 0,
 };
 let debugPanel: HTMLElement | null = null;
@@ -89,7 +70,7 @@ const renderDebugPanel = () => {
   const rows = Object.entries(debugMetrics)
     .map(([key, value]) => `<span>${key}</span><b>${String(value ?? "-")}</b>`)
     .join("");
-  debugPanel.innerHTML = `<strong>Signal HUD</strong>${rows}`;
+  debugPanel.innerHTML = `<strong>Portfolio HUD</strong>${rows}`;
 };
 
 const updateDebugMetric = (key: string, value: DebugValue) => {
@@ -98,6 +79,12 @@ const updateDebugMetric = (key: string, value: DebugValue) => {
 };
 
 renderDebugPanel();
+
+const getAnalyticsProviderName = () => {
+  if (POSTHOG_KEY) return "posthog";
+  if (ANALYTICS_ENDPOINT) return "custom_endpoint";
+  return "none";
+};
 
 const buildAnalyticsPayload = (eventName: string, payload: TrackPayload = {}) => ({
   event: eventName,
@@ -115,12 +102,6 @@ const buildAnalyticsPayload = (eventName: string, payload: TrackPayload = {}) =>
   low_power_mode: computeLowPowerMode(),
   ...payload,
 });
-
-const getAnalyticsProviderName = () => {
-  if (POSTHOG_KEY) return "posthog";
-  if (ANALYTICS_ENDPOINT) return "custom_endpoint";
-  return "none";
-};
 
 const pendingAnalyticsEvents: Array<{ eventName: string; payload: TrackPayload }> = [];
 
@@ -199,512 +180,130 @@ const initAnalyticsProvider = async () => {
 
 const scheduleIdle = (callback: () => void, timeout = 500) => {
   if ("requestIdleCallback" in window) {
-    (
-      window.requestIdleCallback as (
-        idleCallback: () => void,
-        options?: { timeout: number },
-      ) => number
-    )(callback, { timeout });
+    window.requestIdleCallback(callback, { timeout });
     return;
   }
   globalThis.setTimeout(callback, timeout);
 };
 
-colorSchemeQuery.addEventListener("change", (event) => {
-  updateDebugMetric("color_scheme", event.matches ? "light" : "dark");
-  track("color_scheme_changed", {
-    color_scheme: event.matches ? "light" : "dark",
+const sectionName = (sectionId: string) =>
+  sectionDefinitions.find((section) => section.id === sectionId)?.name ?? sectionId;
+
+const navLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".site-nav a"));
+const observedSections = Array.from(document.querySelectorAll<HTMLElement>(".section-observed"));
+const header = document.querySelector<HTMLElement>("[data-site-header]");
+let activeSectionId = initialActiveSectionId;
+let activeSectionStartedAt = performance.now();
+let maxScrollDepth = 0;
+const trackedScrollMilestones = new Set<number>();
+
+const updateActiveNav = (sectionId: string) => {
+  navLinks.forEach((link) => {
+    const isActive = link.hash === `#${sectionId}`;
+    link.classList.toggle("is-active", isActive);
+    if (isActive) link.setAttribute("aria-current", "page");
+    else link.removeAttribute("aria-current");
   });
-});
-
-window.addEventListener("error", () => {
-  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
-  track("client_error", { type: "error" });
-});
-
-window.addEventListener("unhandledrejection", () => {
-  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
-  track("client_error", { type: "unhandledrejection" });
-});
-
-const screen = document.querySelector<HTMLElement>("#screen");
-const fill = document.querySelector<HTMLElement>("#fill");
-const chNum = document.querySelector<HTMLElement>("#chNum");
-const chName = document.querySelector<HTMLElement>("#chName");
-const clockElement = document.querySelector<HTMLElement>("#clock");
-const transitionOverlay = document.querySelector<HTMLElement>("[data-signal-transition]");
-const transitionLabel = document.querySelector<HTMLElement>("[data-signal-label]");
-const channelElements = Array.from(document.querySelectorAll<HTMLElement>(".channel"));
-const navButtons = Array.from(document.querySelectorAll<HTMLButtonElement>(".desktop-nav button[data-goto]"));
-const gotoControls = Array.from(document.querySelectorAll<HTMLElement>("[data-goto]"));
-
-if (!screen || !fill || !chNum || !chName || channelElements.length !== channels.length) {
-  throw new Error("Required broadcast interface elements are missing.");
-}
-
-let currentChannel = hashChannels[window.location.hash] ?? 0;
-let switching = false;
-let queuedHashChannel: number | null = null;
-let channelLenis: Lenis | null = null;
-let lenisRaf = 0;
-let channelDwellStartedAt = performance.now();
-let lastWheelAt = 0;
-let touchStartX = 0;
-let touchStartY = 0;
-let activeChannelMaxScroll = 0;
-let activeChannelHasScrolled = false;
-let heroMotionStarted = false;
-const trackedChannelScrollMilestones = new Set<number>();
-
-const formatClockPart = (value: number) => String(value).padStart(2, "0");
-
-const updateClock = () => {
-  if (!clockElement) return;
-  const date = new Date();
-  clockElement.textContent = `${formatClockPart(date.getHours())}:${formatClockPart(date.getMinutes())}:${formatClockPart(date.getSeconds())}`;
 };
 
-updateClock();
-window.setInterval(updateClock, 1000);
-
-const setProgress = (value: number) => {
-  fill.style.width = `${Math.max(0, Math.min(100, value))}%`;
-};
-
-const getActiveChannelElement = () => channelElements[currentChannel] ?? null;
-
-const destroyChannelScroller = () => {
-  if (lenisRaf) {
-    window.cancelAnimationFrame(lenisRaf);
-    lenisRaf = 0;
-  }
-  channelLenis?.destroy();
-  channelLenis = null;
-};
-
-const startLenisLoop = () => {
-  if (!channelLenis || lenisRaf) return;
-  const lenisFrame = (time: number) => {
-    channelLenis?.raf(time);
-    if (channelLenis) lenisRaf = window.requestAnimationFrame(lenisFrame);
-  };
-  lenisRaf = window.requestAnimationFrame(lenisFrame);
-};
-
-const syncChannelScroller = () => {
-  destroyChannelScroller();
-  if (computeLowPowerMode()) return;
-  const channel = getActiveChannelElement();
-  const content = channel?.querySelector<HTMLElement>(".section-shell, .hero");
-  if (!channel || !content || channel.scrollHeight <= channel.clientHeight + 2) return;
-
-  channelLenis = new Lenis({
-    wrapper: channel,
-    content,
-    duration: 0.9,
-    smoothWheel: true,
-    syncTouch: false,
-  });
-  startLenisLoop();
-};
-
-const flushChannelDwell = (reason: string) => {
-  const durationMs = Math.round(performance.now() - channelDwellStartedAt);
-  track("channel_dwell", {
-    channel: channels[currentChannel]?.number ?? String(currentChannel),
-    name: channels[currentChannel]?.name ?? "UNKNOWN",
+const flushSectionDwell = (reason: string) => {
+  const durationMs = Math.round(performance.now() - activeSectionStartedAt);
+  track("section_dwell", {
+    section: activeSectionId,
+    name: sectionName(activeSectionId),
     duration_ms: durationMs,
-    max_scroll_depth: activeChannelMaxScroll,
-    scrolled: activeChannelHasScrolled,
+    max_scroll_depth: maxScrollDepth,
     reason,
   });
-  channelDwellStartedAt = performance.now();
-  activeChannelMaxScroll = 0;
-  activeChannelHasScrolled = false;
-  trackedChannelScrollMilestones.clear();
-  updateDebugMetric("max_channel_scroll", "0%");
+  activeSectionStartedAt = performance.now();
 };
 
-const updateHistory = (index: number) => {
-  const nextHash = channels[index]?.hash ?? "#home";
-  if (window.location.hash === nextHash) return;
-  window.history.replaceState(null, "", nextHash);
-};
-
-const animateChannelEntry = (index: number) => {
-  if (reducedMotionQuery.matches) return;
-  const channel = channelElements[index];
-  if (!channel) return;
-  const revealTargets = channel.querySelectorAll<HTMLElement>(
-    ".section-heading, .reveal-card, .contact-copy, .form",
-  );
-  if (!revealTargets.length) return;
-
-  gsap.fromTo(
-    revealTargets,
-    { autoAlpha: 0, y: 18, filter: "blur(6px)" },
-    {
-      autoAlpha: 1,
-      y: 0,
-      filter: "blur(0px)",
-      duration: 0.58,
-      ease: "power3.out",
-      stagger: 0.055,
-      overwrite: true,
-    },
-  );
-};
-
-const setChannelState = (index: number) => {
-  currentChannel = index;
-  channelElements.forEach((channel, channelIndex) => {
-    const active = channelIndex === currentChannel;
-    channel.hidden = !active;
-    channel.setAttribute("aria-hidden", String(!active));
-    if (active) channel.scrollTo({ top: 0, behavior: "auto" });
-  });
-  navButtons.forEach((button) => {
-    const indexValue = Number(button.dataset.goto);
-    const active = indexValue === currentChannel;
-    button.classList.toggle("active", active);
-    if (active) button.setAttribute("aria-current", "page");
-    else button.removeAttribute("aria-current");
-  });
-
-  const definition = channels[currentChannel];
-  chNum.textContent = definition?.number ?? "Home";
-  chName.textContent = definition?.name ?? "Landing Page";
-  updateHistory(currentChannel);
-  updateDebugMetric("channel", `${definition?.number ?? ""} ${definition?.name ?? ""}`);
-  setProgress(100);
-  window.requestAnimationFrame(syncChannelScroller);
-  animateChannelEntry(currentChannel);
-};
-
-const playChannelTransition = (channelLabel: string, nextState: () => void) =>
-  new Promise<void>((resolve) => {
-    if (transitionLabel) transitionLabel.textContent = channelLabel;
-
-    if (!transitionOverlay) {
-      nextState();
-      resolve();
-      return;
-    }
-
-    screen.classList.add("is-resolving");
-    transitionOverlay.classList.remove("active");
-    void transitionOverlay.offsetWidth;
-    transitionOverlay.classList.add("active");
-
-    const switchDelay = reducedMotionQuery.matches ? 80 : 220;
-    const totalDelay = reducedMotionQuery.matches ? 250 : 780;
-
-    globalThis.setTimeout(nextState, switchDelay);
-    globalThis.setTimeout(() => {
-      transitionOverlay.classList.remove("active");
-      screen.classList.remove("is-resolving");
-      resolve();
-    }, totalDelay);
-  });
-
-const go = async (index: number, source: ChannelSource = "nav") => {
-  if (switching) {
-    if (source === "hash" && index !== currentChannel) queuedHashChannel = index;
-    return;
-  }
-  if (index === currentChannel || index < 0 || index >= channels.length) return;
-  switching = true;
-  flushChannelDwell("channel_exit");
-  const nextChannel = channels[index];
-  await playChannelTransition(nextChannel?.name ?? "Landing Page", () => {
-    setChannelState(index);
-  });
-  channelDwellStartedAt = performance.now();
-  track("channel_viewed", {
-    channel: channels[index]?.number ?? String(index),
-    name: channels[index]?.name ?? "",
+const setActiveSection = (sectionId: string, source: string) => {
+  if (activeSectionId === sectionId) return;
+  flushSectionDwell("section_change");
+  activeSectionId = sectionId;
+  activeSectionStartedAt = performance.now();
+  updateActiveNav(sectionId);
+  updateDebugMetric("active_section", sectionId);
+  track("section_viewed", {
+    section: sectionId,
+    name: sectionName(sectionId),
     source,
   });
-  switching = false;
-  if (queuedHashChannel !== null) {
-    const nextQueuedChannel = queuedHashChannel;
-    queuedHashChannel = null;
-    if (nextQueuedChannel !== currentChannel) void go(nextQueuedChannel, "hash");
-  }
 };
 
-const initHeroMotion = () => {
-  if (heroMotionStarted) return;
-  heroMotionStarted = true;
+const initSectionTracking = () => {
+  updateActiveNav(activeSectionId);
+  track("section_viewed", {
+    section: activeSectionId,
+    name: sectionName(activeSectionId),
+    source: window.location.hash ? "hash" : "load",
+  });
 
-  const heroLines = gsap.utils.toArray<HTMLElement>("[data-hero-line]");
-  const assemblePieces = gsap.utils.toArray<HTMLElement>(".assemble-piece");
-  const signalLock = document.querySelector<HTMLElement>(".signal-lock");
-  const signalText = signalLock?.querySelector<HTMLElement>("strong");
+  if (!("IntersectionObserver" in window)) return;
 
-  if (reducedMotionQuery.matches) {
-    gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
-    gsap.set(assemblePieces, { autoAlpha: 1, clearProps: "transform,filter" });
-    signalLock?.classList.add("is-locked");
-    if (signalText) signalText.textContent = "Signal locked";
-    track("hero_assembly_completed", { duration_ms: 0 });
-    return;
-  }
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visibleEntry = entries
+        .filter((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.38)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+      if (!visibleEntry) return;
+      const section = visibleEntry.target as HTMLElement;
+      setActiveSection(section.id || section.dataset.sectionName || "unknown", "scroll");
+    },
+    {
+      rootMargin: "-24% 0px -52% 0px",
+      threshold: [0.38, 0.52, 0.7],
+    },
+  );
 
-  const mm = gsap.matchMedia();
-  mm.add("(prefers-reduced-motion: no-preference)", () => {
-    gsap.set(heroLines, { autoAlpha: 1, clearProps: "transform,filter" });
+  observedSections.forEach((section) => observer.observe(section));
+};
 
-    const screenRect = screen.getBoundingClientRect();
-    const driftStates = assemblePieces.map((piece) => {
-      const pieceRect = piece.getBoundingClientRect();
-      const finalX = pieceRect.left - screenRect.left;
-      const finalY = pieceRect.top - screenRect.top;
-      const maxX = Math.max(18, screenRect.width - pieceRect.width - 18);
-      const maxY = Math.max(18, screenRect.height - pieceRect.height - 18);
-      const startX = gsap.utils.random(18, maxX);
-      const startY = gsap.utils.random(18, maxY);
-      return {
-        x: startX - finalX,
-        y: startY - finalY,
-        driftX: startX - finalX + gsap.utils.random(-34, 34),
-        driftY: startY - finalY + gsap.utils.random(-26, 26),
-        rotation: gsap.utils.random(-16, 16),
-        driftRotation: gsap.utils.random(-20, 20),
-      };
+let scrollQueued = false;
+const updateScrollAnalytics = () => {
+  scrollQueued = false;
+  const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+  const depth = scrollable <= 0
+    ? 100
+    : Math.min(100, Math.round((window.scrollY / scrollable) * 100));
+  if (depth <= maxScrollDepth) return;
+  maxScrollDepth = depth;
+  updateDebugMetric("max_scroll_depth", `${depth}%`);
+  [25, 50, 75, 100].forEach((milestone) => {
+    if (depth < milestone || trackedScrollMilestones.has(milestone)) return;
+    trackedScrollMilestones.add(milestone);
+    track("scroll_depth_reached", {
+      depth_percent: milestone,
+      active_section: activeSectionId,
     });
-
-    gsap.set(assemblePieces, {
-      autoAlpha: 0.88,
-      x: (index) => driftStates[index]?.x ?? 0,
-      y: (index) => driftStates[index]?.y ?? 0,
-      rotation: (index) => driftStates[index]?.rotation ?? 0,
-      filter: "blur(1.2px)",
-    });
-    gsap.set(signalLock, { autoAlpha: 0, y: -8 });
-    if (signalText) signalText.textContent = "Signal scattered";
-
-    const timeline = gsap.timeline({
-      defaults: { ease: "power3.out" },
-      onComplete: () => track("hero_assembly_completed", { duration_ms: 4600 }),
-    });
-
-    timeline
-      .to(signalLock, {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.28,
-      })
-      .to(
-        assemblePieces,
-        {
-          autoAlpha: 1,
-          x: (index) => driftStates[index]?.driftX ?? 0,
-          y: (index) => driftStates[index]?.driftY ?? 0,
-          rotation: (index) => driftStates[index]?.driftRotation ?? 0,
-          filter: "blur(0.8px)",
-          duration: 3,
-          ease: "sine.inOut",
-          stagger: {
-            amount: 0.52,
-            from: "random",
-          },
-        },
-        0.08,
-      )
-      .call(() => {
-        if (signalText) signalText.textContent = "Signal locking";
-      }, undefined, 2.7)
-      .to(
-        assemblePieces,
-        {
-          autoAlpha: 1,
-          x: 0,
-          y: 0,
-          rotation: 0,
-          filter: "blur(0px)",
-          duration: 1.18,
-          ease: "expo.out",
-          stagger: {
-            amount: 0.44,
-            from: "random",
-          },
-        },
-        3.05,
-      )
-      .call(() => {
-        signalLock?.classList.add("is-locked");
-        if (signalText) signalText.textContent = "Signal locked";
-      }, undefined, "-=0.24")
-      .set(assemblePieces, { clearProps: "transform,filter,opacity,visibility" });
-
-    return () => {
-      timeline.kill();
-      gsap.killTweensOf([...heroLines, ...assemblePieces, signalLock].filter(Boolean));
-    };
   });
 };
 
-setChannelState(currentChannel);
-setProgress(100);
-initHeroMotion();
-track("site_loaded", {
-  pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
-  reduced_motion: reducedMotionQuery.matches,
-  analytics_provider: getAnalyticsProviderName(),
-});
-track("channel_viewed", {
-  channel: channels[currentChannel]?.number ?? String(currentChannel),
-  name: channels[currentChannel]?.name ?? "",
-  source: window.location.hash ? "hash" : "nav",
-});
-
-gotoControls.forEach((control) => {
-  control.addEventListener("click", (event) => {
-    const index = Number(control.dataset.goto);
-    if (!Number.isFinite(index)) return;
-    event.preventDefault();
-    const source: ChannelSource = control.closest(".hero") ? "hero_cta" : "nav";
-    if (source === "hero_cta") {
-      track("cta_clicked", {
-        location: "hero",
-        target_channel: index,
-      });
-    }
-    void go(index, source);
-  });
-});
+window.addEventListener(
+  "scroll",
+  () => {
+    header?.classList.toggle("is-scrolled", window.scrollY > 6);
+    if (scrollQueued) return;
+    scrollQueued = true;
+    window.requestAnimationFrame(updateScrollAnalytics);
+  },
+  { passive: true },
+);
+header?.classList.toggle("is-scrolled", window.scrollY > 6);
 
 window.addEventListener("hashchange", () => {
-  const targetChannel = hashChannels[window.location.hash];
-  if (targetChannel === undefined) return;
-  void go(targetChannel, "hash");
+  const hashSectionId = getHashSectionId();
+  if (hashSectionId) setActiveSection(hashSectionId, "hash");
 });
 
-const canScrollInDirection = (deltaY: number) => {
-  const channel = getActiveChannelElement();
-  if (!channel || channel.scrollHeight <= channel.clientHeight + 2) return false;
-  if (deltaY > 0) {
-    return channel.scrollTop + channel.clientHeight < channel.scrollHeight - 2;
-  }
-  return channel.scrollTop > 2;
-};
-
-window.addEventListener(
-  "wheel",
-  (event) => {
-    if (canScrollInDirection(event.deltaY)) return;
-    const now = Date.now();
-    if (now - lastWheelAt < 720) return;
-    lastWheelAt = now;
-    const next = event.deltaY > 0
-      ? Math.min(currentChannel + 1, channels.length - 1)
-      : Math.max(currentChannel - 1, 0);
-    void go(next, "wheel");
-  },
-  { passive: true },
-);
-
-window.addEventListener(
-  "touchstart",
-  (event) => {
-    touchStartX = event.touches[0]?.clientX ?? 0;
-    touchStartY = event.touches[0]?.clientY ?? 0;
-  },
-  { passive: true },
-);
-
-window.addEventListener(
-  "touchend",
-  (event) => {
-    const endX = event.changedTouches[0]?.clientX ?? touchStartX;
-    const endY = event.changedTouches[0]?.clientY ?? touchStartY;
-    const deltaX = touchStartX - endX;
-    const deltaY = touchStartY - endY;
-    const horizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 45;
-    const verticalAtBoundary = Math.abs(deltaY) > 60 && !canScrollInDirection(deltaY);
-    if (!horizontalSwipe && !verticalAtBoundary) return;
-
-    const delta = horizontalSwipe ? deltaX : deltaY;
-    const next = delta > 0
-      ? Math.min(currentChannel + 1, channels.length - 1)
-      : Math.max(currentChannel - 1, 0);
-    void go(next, "touch");
-  },
-  { passive: true },
-);
-
-window.addEventListener("keydown", (event) => {
-  const target = event.target as HTMLElement | null;
-  if (target?.matches("input, textarea, button, a, select")) return;
-
-  if (/^[1-4]$/.test(event.key)) {
-    event.preventDefault();
-    void go(Number(event.key) - 1, "keyboard");
-    return;
-  }
-
-  if (event.key === "ArrowRight") void go(Math.min(currentChannel + 1, channels.length - 1), "keyboard");
-  if (event.key === "ArrowLeft") void go(Math.max(currentChannel - 1, 0), "keyboard");
-  if (event.key === "ArrowDown" && !canScrollInDirection(1)) {
-    void go(Math.min(currentChannel + 1, channels.length - 1), "keyboard");
-  }
-  if (event.key === "ArrowUp" && !canScrollInDirection(-1)) {
-    void go(Math.max(currentChannel - 1, 0), "keyboard");
-  }
-});
-
-channelElements.forEach((channel, index) => {
-  let scrollQueued = false;
-  channel.addEventListener(
-    "scroll",
-    () => {
-      if (index !== currentChannel || scrollQueued) return;
-      scrollQueued = true;
-      window.requestAnimationFrame(() => {
-        scrollQueued = false;
-        const scrollable = channel.scrollHeight - channel.clientHeight;
-        if (scrollable <= 0) return;
-        const depth = Math.min(100, Math.round((channel.scrollTop / scrollable) * 100));
-        if (!activeChannelHasScrolled && channel.scrollTop > 4) {
-          activeChannelHasScrolled = true;
-          track("channel_scroll_started", {
-            channel: channels[currentChannel]?.number ?? String(currentChannel),
-          });
-        }
-        if (depth > activeChannelMaxScroll) {
-          activeChannelMaxScroll = depth;
-          updateDebugMetric("max_channel_scroll", `${depth}%`);
-          [25, 50, 75, 100].forEach((milestone) => {
-            if (depth < milestone || trackedChannelScrollMilestones.has(milestone)) return;
-            trackedChannelScrollMilestones.add(milestone);
-            track("channel_scroll_depth", {
-              channel: channels[currentChannel]?.number ?? String(currentChannel),
-              depth_percent: milestone,
-            });
-          });
-        }
-      });
-    },
-    { passive: true },
-  );
-});
-
-let resizeTimer = 0;
-window.addEventListener(
-  "resize",
-  () => {
-    globalThis.clearTimeout(resizeTimer);
-    resizeTimer = globalThis.setTimeout(() => {
-      updateDebugMetric("low_power_mode", computeLowPowerMode());
-      syncChannelScroller();
-    }, 180);
-  },
-  { passive: true },
-);
-
-document.querySelectorAll<HTMLImageElement>("[data-logo]").forEach((logo) => {
-  logo.addEventListener("error", () => logo.classList.add("is-broken"));
+document.querySelectorAll<HTMLElement>("[data-cta]").forEach((control) => {
+  control.addEventListener("click", () => {
+    track("cta_clicked", {
+      location: "hero",
+      label: control.dataset.cta ?? "unknown",
+    });
+  });
 });
 
 const initContactForm = () => {
@@ -770,7 +369,7 @@ const initContactForm = () => {
 
     submitButton.disabled = true;
     form.setAttribute("aria-busy", "true");
-    setStatus("Sending signal...");
+    setStatus("Sending...");
 
     try {
       const controller = new AbortController();
@@ -796,13 +395,13 @@ const initContactForm = () => {
 
       form.reset();
       resetStartedAt();
-      setStatus("Signal received - thanks.", "success");
+      setStatus("Message received - thanks.", "success");
       track("contact_form_success");
     } catch (error) {
-      const statusCode = error instanceof Error && "status" in error
+      const statusCode: string | number = error instanceof Error && "status" in error
         ? Number((error as Error & { status?: number }).status) || "network"
         : "network";
-      setStatus("Signal interrupted. Please try again in a moment.", "error");
+      setStatus("Something interrupted the send. Please try again.", "error");
       track("contact_form_error", { status: statusCode });
     } finally {
       submitButton.disabled = false;
@@ -851,7 +450,7 @@ document.addEventListener(
       action.id ||
       "unlabeled";
     track("ui_clicked", {
-      channel: channels[currentChannel]?.number ?? String(currentChannel),
+      active_section: activeSectionId,
       tag: action.tagName.toLowerCase(),
       label: label.slice(0, 96),
       href: action instanceof HTMLAnchorElement ? action.href : null,
@@ -868,6 +467,23 @@ document.addEventListener("click", (event) => {
     destination: link.hostname,
     label: link.getAttribute("aria-label") || link.textContent?.trim() || null,
   });
+});
+
+colorSchemeQuery.addEventListener("change", (event) => {
+  updateDebugMetric("color_scheme", event.matches ? "light" : "dark");
+  track("color_scheme_changed", {
+    color_scheme: event.matches ? "light" : "dark",
+  });
+});
+
+window.addEventListener("error", () => {
+  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
+  track("client_error", { type: "error" });
+});
+
+window.addEventListener("unhandledrejection", () => {
+  updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
+  track("client_error", { type: "unhandledrejection" });
 });
 
 const initPerformanceAnalytics = () => {
@@ -952,7 +568,7 @@ const trackLoadPerformance = () => {
   const scripts = resources.filter((resource) => resource.initiatorType === "script");
   const styles = resources.filter((resource) => resource.initiatorType === "link" || resource.initiatorType === "css");
   const images = resources.filter((resource) => resource.initiatorType === "img");
-  const fonts = resources.filter((resource) => resource.initiatorType === "css" || resource.name.includes("fonts.gstatic.com"));
+  const fonts = resources.filter((resource) => resource.name.includes("fonts.gstatic.com"));
   const totalTransfer = resources.reduce((sum, resource) => sum + (resource.transferSize || 0), 0);
 
   track("resource_summary", {
@@ -984,20 +600,18 @@ const getVisibleDurationMs = () =>
 document.addEventListener("visibilitychange", () => {
   if (document.visibilityState === "hidden") {
     pauseVisibleTimer();
-    destroyChannelScroller();
     track("page_hidden", {
       visible_duration_ms: getVisibleDurationMs(),
-      active_channel: channels[currentChannel]?.number ?? String(currentChannel),
+      active_section: activeSectionId,
     });
     return;
   }
 
   visibleStartedAt = performance.now();
-  channelDwellStartedAt = performance.now();
-  syncChannelScroller();
+  activeSectionStartedAt = performance.now();
   track("page_visible", {
     visible_duration_ms: getVisibleDurationMs(),
-    active_channel: channels[currentChannel]?.number ?? String(currentChannel),
+    active_section: activeSectionId,
   });
 });
 
@@ -1005,24 +619,35 @@ window.setInterval(() => {
   if (document.visibilityState !== "visible") return;
   track("engagement_heartbeat", {
     visible_duration_ms: getVisibleDurationMs(),
-    active_channel: channels[currentChannel]?.number ?? String(currentChannel),
-    channel_scroll_depth: activeChannelMaxScroll,
-    scrolled: activeChannelHasScrolled,
+    active_section: activeSectionId,
+    scroll_depth: maxScrollDepth,
   });
 }, 30_000);
 
 window.addEventListener("pagehide", () => {
   pauseVisibleTimer();
-  flushChannelDwell("session_end");
+  flushSectionDwell("session_end");
   track("session_ended", {
     duration_ms: Math.round(performance.now() - sessionStartedAt),
     visible_duration_ms: getVisibleDurationMs(),
-    final_channel: channels[currentChannel]?.number ?? String(currentChannel),
+    final_section: activeSectionId,
   });
 });
 
+if (!reducedMotionQuery.matches && !computeLowPowerMode()) {
+  window.setTimeout(() => {
+    track("hero_signal_settled", { duration_ms: 1800 });
+  }, 1900);
+}
+
+track("site_loaded", {
+  pointer: window.matchMedia("(pointer: coarse)").matches ? "coarse" : "fine",
+  reduced_motion: reducedMotionQuery.matches,
+  analytics_provider: getAnalyticsProviderName(),
+});
+initSectionTracking();
+
 window.addEventListener("load", () => {
-  window.requestAnimationFrame(syncChannelScroller);
   scheduleIdle(initAnalyticsProvider, 900);
   scheduleIdle(trackLoadPerformance, 1200);
   scheduleIdle(() => {

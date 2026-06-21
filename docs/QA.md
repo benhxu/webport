@@ -13,19 +13,19 @@ analytics, or contact-form changes.
 | Browser console has no uncaught runtime errors | [ ] |
 | No horizontal scroll at desktop or mobile widths | [ ] |
 
-## Broadcast Navigation
+## Navigation
 
 | Test | Pass |
 | --- | --- |
-| BX brand opens the Home channel | [ ] |
-| About nav opens the About channel | [ ] |
-| Experience nav opens the Experience channel | [ ] |
-| Contact nav opens the Contact channel | [ ] |
-| Hero "View Experience" button opens Experience | [ ] |
-| Hero "Contact" button opens Contact | [ ] |
-| Direct hashes work: `#home`, `#about`, `#experience`, `#contact` | [ ] |
-| Wheel, touch, and keyboard channel changes do not trap the user | [ ] |
-| Signal transition feels smooth and does not flash broken layout | [ ] |
+| BX brand returns to the hero | [ ] |
+| Work nav scrolls to Selected Work | [ ] |
+| About nav scrolls to About | [ ] |
+| Contact nav scrolls to Contact | [ ] |
+| Hero "View work" button scrolls to Selected Work | [ ] |
+| Hero "Contact" button scrolls to Contact | [ ] |
+| Direct hashes work: `#home`, `#work`, `#about`, `#contact` | [ ] |
+| Wheel, touch, and keyboard scrolling never trap the user | [ ] |
+| Hero signal animation feels smooth and does not flash broken layout | [ ] |
 
 ## Responsive Layout
 
@@ -49,7 +49,7 @@ analytics, or contact-form changes.
 | Icon-only social links have `aria-label` text | [ ] |
 | Color contrast is readable in dark and light mode | [ ] |
 | `prefers-reduced-motion: reduce` avoids the heavy hero assembly animation | [ ] |
-| Screen reader announces the current channel via the hidden live region | [ ] |
+| Page keeps a logical heading order from hero to contact | [ ] |
 
 ## Contact Form
 
@@ -84,9 +84,9 @@ Use PostHog Activity, Debugger, or Live events.
 | --- | --- | --- |
 | `$pageview` | Load the site | [ ] |
 | `site_loaded` | Load the site | [ ] |
-| `channel_viewed` | Navigate between channels | [ ] |
-| `channel_dwell` | Leave a channel after viewing it | [ ] |
-| `hero_assembly_completed` | Let the landing animation finish | [ ] |
+| `section_viewed` | Scroll between sections | [ ] |
+| `section_dwell` | Leave a section after viewing it | [ ] |
+| `hero_signal_settled` | Let the landing animation finish | [ ] |
 | `cta_clicked` | Click a hero CTA | [ ] |
 | `ui_clicked` | Click any button or link | [ ] |
 | `outbound_link_clicked` | Open LinkedIn or GitHub | [ ] |
@@ -117,8 +117,8 @@ Run Lighthouse in an incognito window against the deployed site.
 | CLS | < 0.1 | < 0.1 |
 | Total Blocking Time | < 200ms | < 300ms |
 
-Also test manually on a phone. The hero animation should feel smooth, channel
-switches should feel responsive, and the contact form should not jump or resize
+Also test manually on a phone. The hero animation should feel smooth, normal
+scrolling should feel responsive, and the contact form should not jump or resize
 awkwardly when the mobile keyboard opens.
 
 ## Security Headers

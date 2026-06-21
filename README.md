@@ -2,13 +2,15 @@
 
 **Live site:** https://webport-mu-seven.vercel.app/
 
-A four-section personal portfolio presented as a BXTV-style signal interface.
-The visual idea is simple: scattered operational signals resolve into clarity.
+A quiet editorial one-page portfolio for Ben Xu. The design is intentionally
+simple: a strong positioning hero, concise proof, selected work, operating
+philosophy, and a direct contact form.
 
-- **Home:** animated signal assembly landing page
+- **Hero:** positioning, value proposition, and primary calls to action
+- **Proof:** three context-rich outcome points
+- **Selected Work:** Marlo.Today and FreeWire Technologies case-study rows
 - **About:** profile, background, education, and operating perspective
-- **Experience:** Marlo.Today and FreeWire Technologies work cards
-- **Contact:** short contact form plus LinkedIn, GitHub, and email shortcuts
+- **Contact:** short form plus LinkedIn, GitHub, and email shortcuts
 
 ## Stack
 
@@ -16,14 +18,14 @@ The visual idea is simple: scattered operational signals resolve into clarity.
 | --- | --- |
 | Build | Vite 8 + TypeScript 5.8 |
 | UI | Static HTML, CSS, and vanilla TypeScript |
-| Motion | GSAP and Lenis |
+| Motion | Native CSS transitions and browser scrolling |
 | Email | Vercel serverless function at `/api/contact` plus Resend |
 | Analytics | PostHog custom events, optional session replay, optional custom beacon endpoint |
 | Hosting | Vercel |
 
-No React, no CSS framework, and no runtime content CMS. The visible content for
-the current restored design lives in `index.html`; motion, navigation, analytics,
-and form handling live in `src/main.ts`; styling lives in `src/styles.css`.
+No React, no CSS framework, and no runtime content CMS. The visible content lives
+in `index.html`, durable copy lives in `src/content/siteContent.ts`, interaction
+and analytics live in `src/main.ts`, and styling lives in `src/styles.css`.
 
 ## Project Structure
 
@@ -40,8 +42,10 @@ webport/
     freewire-logo.svg
     og-tv.png
   src/
-    main.ts          Broadcast navigation, GSAP motion, analytics, form handling
-    styles.css       Site styling and responsive behavior
+    content/
+      siteContent.ts Durable portfolio copy and analytics section names
+    main.ts          Navigation state, analytics, performance tracking, form handling
+    styles.css       Editorial styling and responsive behavior
   index.html         Static portfolio markup and content
   vercel.json        Security headers, CSP, and cache headers
   ANALYTICS.md       PostHog event schema and dashboard ideas
