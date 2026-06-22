@@ -837,35 +837,41 @@ h3 {
 }
 
 .contact-shell {
+  width: min(100%, 1180px);
   display: grid;
-  grid-template-columns: minmax(320px, 0.8fr) minmax(0, 1.2fr);
-  gap: clamp(24px, 4vw, 72px);
+  grid-template-columns: minmax(280px, 0.76fr) minmax(0, 1.24fr);
+  gap: clamp(24px, 4.5vw, 76px);
   align-items: center;
-  padding: clamp(22px, 4vw, 54px);
+  margin-inline: auto;
+  padding: clamp(22px, 3.5vw, 46px);
   border-radius: 28px;
 }
 
+.contact-copy {
+  min-width: 0;
+}
+
 .contact-copy h2 {
-  max-width: 620px;
+  max-width: 8.7ch;
   color: var(--text);
-  font-size: clamp(48px, 6vw, 92px);
+  font-size: clamp(46px, 5.4vw, 82px);
   font-weight: 600;
-  line-height: 0.94;
+  line-height: 0.9;
   letter-spacing: -0.05em;
 }
 
 .contact-copy p:not(.eyebrow) {
-  max-width: 56ch;
-  margin-top: 22px;
+  max-width: 41ch;
+  margin-top: clamp(16px, 2vw, 24px);
   color: var(--muted);
-  font-size: clamp(16px, 1.4vw, 21px);
+  font-size: clamp(16px, 1.24vw, 19px);
   line-height: 1.55;
 }
 
 .contact-icons {
   display: flex;
   gap: 12px;
-  margin-top: 28px;
+  margin-top: clamp(18px, 2.4vw, 30px);
 }
 
 .icon-button {
@@ -911,8 +917,8 @@ h3 {
 
 .form {
   display: grid;
-  gap: 14px;
-  padding: clamp(18px, 2.6vw, 34px);
+  gap: 12px;
+  padding: clamp(18px, 2.35vw, 30px);
   border-radius: 22px;
 }
 
@@ -967,7 +973,7 @@ h3 {
 }
 
 textarea.input {
-  min-height: clamp(104px, 15vh, 170px);
+  min-height: clamp(104px, 14vh, 150px);
   resize: vertical;
 }
 
@@ -975,7 +981,7 @@ textarea.input {
   min-height: 52px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
 }
 
 .form-status {
@@ -1283,22 +1289,24 @@ textarea.input {
   }
 
   .contact-copy h2 {
-    font-size: clamp(36px, 12vw, 56px);
+    max-width: 10ch;
+    font-size: clamp(32px, 10.5vw, 46px);
+    line-height: 0.95;
   }
 
   .contact-copy p:not(.eyebrow) {
-    margin-top: 14px;
+    margin-top: 12px;
     font-size: 15px;
     line-height: 1.45;
   }
 
   .contact-icons {
-    margin-top: 16px;
+    margin-top: 14px;
   }
 
   .icon-button {
-    width: 52px;
-    height: 52px;
+    width: 48px;
+    height: 48px;
   }
 
   .row {
@@ -1306,7 +1314,7 @@ textarea.input {
   }
 
   textarea.input {
-    min-height: 94px;
+    min-height: 78px;
   }
 
   .form-actions {
@@ -1319,17 +1327,22 @@ textarea.input {
   }
 
   .contact-shell {
-    gap: 16px;
-    padding: 14px;
+    gap: 12px;
+    padding: 12px;
   }
 
   .form {
-    gap: 10px;
-    padding: 16px;
+    gap: 8px;
+    padding: 12px;
   }
 
   .input {
-    min-height: 46px;
+    min-height: 42px;
+    padding-block: 10px;
+  }
+
+  .field {
+    gap: 5px;
   }
 }
 
