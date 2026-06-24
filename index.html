@@ -3,351 +3,243 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="dark light" />
-    <meta name="theme-color" content="#030407" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#f4f0e8" media="(prefers-color-scheme: light)" />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#e6e7e1" />
     <meta name="robots" content="index, follow" />
-    <title>Ben Xu &mdash; Strategy &amp; Operations</title>
+    <title>Ben Xu - Strategy &amp; Operations</title>
     <meta
       name="description"
-      content="Ben Xu — Strategy & Operations / Technical BizOps. Operator who builds systems for messy GTM, customer, and supply chain workflows."
+      content="Ben Xu - Strategy and Operations / Technical BizOps. Operator who turns messy GTM, supply chain, and business workflows into systems teams use."
     />
-    <meta property="og:title" content="Ben Xu &mdash; Strategy &amp; Operations" />
+    <meta property="og:title" content="Ben Xu - Strategy &amp; Operations" />
     <meta
       property="og:description"
-      content="Operator who builds systems for messy GTM, customer, and supply chain workflows."
+      content="Operator who turns messy operations into systems teams actually use."
     />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://webport-mu-seven.vercel.app/" />
     <meta property="og:image" content="https://webport-mu-seven.vercel.app/og-tv.png" />
     <meta
       property="og:image:alt"
-      content="Ben Xu portfolio presented as a premium signal assembly interface"
+      content="Ben Xu portfolio with an editorial San Francisco bridge hero"
     />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Ben Xu — Strategy &amp; Operations" />
+    <meta name="twitter:title" content="Ben Xu - Strategy &amp; Operations" />
     <meta
       name="twitter:description"
-      content="Operator who builds systems for messy GTM, customer, and supply chain workflows."
+      content="Operator who turns messy operations into systems teams actually use."
     />
     <meta name="twitter:image" content="https://webport-mu-seven.vercel.app/og-tv.png" />
     <link rel="canonical" href="https://webport-mu-seven.vercel.app/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
-    />
+    <link rel="preload" as="image" href="/bridge-home-bg.jpg" fetchpriority="high" />
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body>
-    <div class="broadcast-app">
-      <div class="ambient-grid" aria-hidden="true"></div>
-      <div class="signal-transition" data-signal-transition aria-hidden="true">
-        <span data-signal-label>Signal</span>
+<section class="bridge-hero" id="home" data-bridge-hero>
+      <div class="bridge-photo" aria-hidden="true">
+        <img
+          src="/bridge-home-bg.jpg"
+          alt=""
+          decoding="async"
+          fetchpriority="high"
+          onerror="this.onerror=null; this.src='../public/bridge-home-bg.jpg';"
+        />
       </div>
+      <div class="paper-grain" aria-hidden="true"></div>
+      <div class="home-dust" aria-hidden="true"></div>
 
-      <header class="topbar">
-        <a class="brand" href="#home" data-goto="0" aria-label="Go to landing page">
-          <span>BX</span>
-          <i aria-hidden="true"></i>
-        </a>
-        <div class="visually-hidden" aria-live="polite">
-          <span id="chNum">Home</span>
-          <span id="chName">Landing Page</span>
-          <time id="clock" aria-label="Current local time">00:00:00</time>
+      <header class="topline" aria-label="Primary">
+        <a class="brand" href="#home" aria-label="BX home" data-section-link>BX</a>
+        <div class="identity" aria-label="Positioning">
+          <span>Strategy &amp; Operations <i></i> GTM Ops <i></i> Systems Builder</span>
         </div>
-        <nav class="desktop-nav" aria-label="Primary navigation">
-          <button type="button" data-goto="1">About</button>
-          <button type="button" data-goto="2">Experience</button>
-          <button type="button" data-goto="3">Contact</button>
+        <nav class="nav">
+          <a href="#about" data-section-link>About</a>
+          <a href="#experience" data-section-link>Experience</a>
+          <a href="#contact" data-section-link>Contact</a>
         </nav>
-        <div class="progress" aria-hidden="true"><div class="fill" id="fill"></div></div>
       </header>
 
-      <main class="screen" id="screen">
-        <section
-          class="channel channel-hero section-observed"
-          id="home"
-          data-channel-index="0"
-          aria-labelledby="hero-title"
-        >
-          <div class="signal-lock" aria-hidden="true">
-            <span></span>
-            <strong>Signal scattered</strong>
+      <svg class="workflow-lines" viewBox="0 0 1200 520" preserveAspectRatio="none" aria-hidden="true">
+        <path class="quiet" style="--lx: -54px; --ly: -28px; --lr: -7deg" d="M184 188 C 372 142, 472 196, 598 232" />
+        <path class="gold" style="--lx: 46px; --ly: 22px; --lr: 5deg" d="M184 232 C 364 226, 470 260, 598 258" />
+        <path class="quiet" style="--lx: -38px; --ly: 34px; --lr: 8deg" d="M184 276 C 370 312, 480 296, 598 284" />
+        <path class="gold" style="--lx: 52px; --ly: -22px; --lr: 6deg" d="M602 232 C 742 198, 888 186, 1016 184" />
+        <path class="quiet" style="--lx: -44px; --ly: 18px; --lr: -5deg" d="M602 258 C 752 250, 888 238, 1016 230" />
+        <path class="gold" style="--lx: 40px; --ly: 30px; --lr: 7deg" d="M602 284 C 762 310, 898 284, 1016 276" />
+      </svg>
+
+      <div class="settle-layer">
+        <div class="label-group left" aria-hidden="true">
+          <h2 class="label-title orbit-object" style="--ox: -140px; --oy: -92px; --or: -10deg; --os: 0.96; --delay: 120ms">
+            <span class="orbit-inner">Messy inputs</span>
+          </h2>
+          <span class="label-item orbit-object" style="--ox: -210px; --oy: 74px; --or: 8deg; --os: 0.92; --delay: 180ms; --float-delay: -180ms">
+            <span class="orbit-inner">manual work</span><i></i>
+          </span>
+          <span class="label-item orbit-object" style="--ox: -116px; --oy: -154px; --or: -14deg; --os: 0.94; --delay: 260ms; --float-delay: -520ms">
+            <span class="orbit-inner">scattered data</span><i></i>
+          </span>
+          <span class="label-item orbit-object" style="--ox: -240px; --oy: -22px; --or: 13deg; --os: 0.95; --delay: 330ms; --float-delay: -340ms">
+            <span class="orbit-inner">handoffs</span><i></i>
+          </span>
+        </div>
+
+        <div class="label-group right" aria-hidden="true">
+          <h2 class="label-title orbit-object" style="--ox: 138px; --oy: -96px; --or: 9deg; --os: 0.96; --delay: 160ms">
+            <span class="orbit-inner">Systems teams use</span>
+          </h2>
+          <span class="label-item orbit-object" style="--ox: 218px; --oy: 58px; --or: -8deg; --os: 0.93; --delay: 230ms; --float-delay: -240ms">
+            <i></i><span class="orbit-inner">dashboards</span>
+          </span>
+          <span class="label-item orbit-object" style="--ox: 114px; --oy: -152px; --or: 12deg; --os: 0.93; --delay: 310ms; --float-delay: -610ms">
+            <i></i><span class="orbit-inner">workflows</span>
+          </span>
+          <span class="label-item orbit-object" style="--ox: 244px; --oy: -18px; --or: -12deg; --os: 0.95; --delay: 380ms; --float-delay: -440ms">
+            <i></i><span class="orbit-inner">decisions</span>
+          </span>
+        </div>
+
+        <main class="hero-copy">
+          <h1 class="headline" aria-label="I turn messy operations into systems teams actually use.">
+            <span class="headline-word orbit-object" style="--ox: -210px; --oy: -118px; --or: -8deg; --os: 0.94; --delay: 80ms"><span class="orbit-inner">I turn</span></span>
+            <span class="headline-word orbit-object" style="--ox: 190px; --oy: -132px; --or: 7deg; --os: 0.94; --delay: 170ms"><span class="orbit-inner">messy operations</span></span>
+            <span class="headline-word orbit-object" style="--ox: -134px; --oy: 126px; --or: 6deg; --os: 0.95; --delay: 250ms"><span class="orbit-inner">into systems teams</span></span>
+            <span class="headline-word orbit-object" style="--ox: 170px; --oy: 112px; --or: -9deg; --os: 0.95; --delay: 330ms"><span class="orbit-inner">actually use.</span></span>
+          </h1>
+          <p class="subcopy orbit-object" style="--ox: 90px; --oy: 76px; --or: -4deg; --os: 0.96; --delay: 520ms">
+            <span class="orbit-inner">From service floors to supply chain to startup GTM, I learned how work breaks in the real world, then built dashboards, workflows, and reporting systems that make it run cleaner.</span>
+          </p>
+          <div class="actions">
+            <a class="orbit-object" href="#experience" data-section-link style="--ox: -280px; --oy: 92px; --or: 8deg; --os: 0.9; --delay: 690ms">
+              <span class="orbit-inner">View work</span>
+            </a>
+            <a class="orbit-object" href="#contact" data-section-link style="--ox: 256px; --oy: 104px; --or: -7deg; --os: 0.9; --delay: 760ms">
+              <span class="orbit-inner">Contact</span>
+            </a>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <main class="portfolio-world" aria-label="Portfolio sections">
+      <section class="story-section about-section" id="about">
+        <div class="section-shell about-layout">
+          <div class="reveal">
+            <p class="profile-quote">"I learned early how to navigate systems that did not come with clear instructions."</p>
+            <h2 class="section-title">Built by uncertainty. Driven by clarity.</h2>
+            <p class="section-copy">
+              I moved to America when I was one and was raised in San Francisco. That shows up in how I work now: I look for unclear handoffs, repeated manual work, and scattered information, then turn it into infrastructure teams can actually use.
+            </p>
           </div>
 
-          <div class="hero">
-            <p class="eyebrow hero-kicker">
-              <span class="assemble-piece">Open</span>
-              <span class="assemble-piece">to</span>
-              <span class="assemble-piece">Strategy</span>
-              <span class="assemble-piece">&amp;</span>
-              <span class="assemble-piece">Operations</span>
-              <span class="assemble-piece">/</span>
-              <span class="assemble-piece">Technical</span>
-              <span class="assemble-piece">BizOps</span>
-            </p>
-            <p class="hero-name" aria-label="Ben Xu">
-              <span class="assemble-piece">BEN</span>
-              <span class="assemble-piece">XU</span>
-            </p>
-            <h1 class="hero-role" id="hero-title" data-hero-line>
-              <span class="assemble-piece">Operator</span>
-              <span class="assemble-piece">who</span>
-              <span class="assemble-piece">builds</span>
-              <span class="assemble-piece">systems</span>
-            </h1>
-            <p class="hero-positioning" data-hero-line>
-              <span class="assemble-piece">I</span>
-              <span class="assemble-piece">turn</span>
-              <span class="assemble-piece">fragmented</span>
-              <span class="assemble-piece">GTM,</span>
-              <span class="assemble-piece">customer,</span>
-              <span class="assemble-piece">and</span>
-              <span class="assemble-piece">supply</span>
-              <span class="assemble-piece">chain</span>
-              <span class="assemble-piece">workflows</span>
-              <span class="assemble-piece">into</span>
-              <span class="assemble-piece">reporting</span>
-              <span class="assemble-piece">systems</span>
-              <span class="assemble-piece">and</span>
-              <span class="assemble-piece">execution</span>
-              <span class="assemble-piece">tools</span>
-              <span class="assemble-piece">teams</span>
-              <span class="assemble-piece">actually</span>
-              <span class="assemble-piece">use.</span>
-            </p>
-            <div class="hero-actions" data-hero-line>
-              <button class="btn primary assemble-piece" type="button" data-goto="2">
-                View Experience
-              </button>
-              <button class="btn assemble-piece" type="button" data-goto="3">
-                Contact
-              </button>
+          <div class="profile-facts reveal" aria-label="Profile facts">
+            <div class="fact-row">
+              <span class="fact-label">Education</span>
+              <span class="fact-value">UC San Diego, Rady School of Management</span>
+            </div>
+            <div class="fact-row">
+              <span class="fact-label">Degree</span>
+              <span class="fact-value">B.S. Business Economics, Jun 2023</span>
+            </div>
+            <div class="fact-row">
+              <span class="fact-label">Based in</span>
+              <span class="fact-value">San Francisco, CA</span>
+            </div>
+            <div class="fact-row">
+              <span class="fact-label">Focus</span>
+              <span class="fact-value">Strategy and Ops, BizOps, GTM Ops</span>
             </div>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section
-          class="channel section-observed"
-          id="about"
-          data-channel-index="1"
-          aria-labelledby="about-title"
-          hidden
-        >
-          <div class="section-shell about-shell profile-grid">
-            <div class="profile-lede reveal-card">
-              <p class="eyebrow">02 &mdash; Profile</p>
-              <h2 id="about-title">
-                Built by uncertainty.<br />
-                <span>Driven by clarity.</span>
-              </h2>
-              <blockquote>
-                &ldquo;I learned early how to navigate systems that didn&rsquo;t come with clear
-                instructions.&rdquo;
-              </blockquote>
-            </div>
+      <section class="story-section experience-section" id="experience">
+        <div class="section-shell experience-layout">
+          <div class="reveal">
+            <h2 class="section-title compact">Selected work.</h2>
+            <p class="section-copy">
+              Two environments, one pattern: find the mess, build the system, make the result easier to use.
+            </p>
+          </div>
 
-            <div class="profile-copy reveal-card">
-              <div class="profile-narrative">
-                <p>
-                  I moved to America when I was one, grew up in San Francisco, and learned
-                  early how to move through systems that did not come with clear instructions.
-                  That is the instinct I bring to work now: find unclear handoffs, repeated
-                  manual work, and scattered information, then turn them into infrastructure
-                  teams can actually use.
-                </p>
+          <div class="case-grid">
+            <article class="case-panel reveal">
+              <div class="case-head">
+                <div class="company-mark marlo" aria-hidden="true">
+                  <img src="/marlo-logo.svg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='../public/marlo-logo.svg';" />
+                </div>
+                <div>
+                  <p class="case-meta">2024 to present</p>
+                  <h3 class="case-title">BizOps Associate</h3>
+                  <p class="case-company">Marlo.Today</p>
+                </div>
               </div>
+              <p class="case-lede">Built GTM reporting that replaced recurring manual assembly with clearer status, ownership, and weekly rhythm.</p>
+              <details class="case-expand">
+                <summary>Read case notes</summary>
+                <div class="case-details">
+                  <div class="case-detail"><strong>Problem</strong><span>GTM work lived across tools, handoffs, and manual reporting cycles.</span></div>
+                  <div class="case-detail"><strong>Built</strong><span>Reporting systems and workflow surfaces that connected campaign work to cleaner operating visibility.</span></div>
+                  <div class="case-detail"><strong>Result</strong><span>Reduced recurring reporting assembly and gave the team a clearer weekly operating rhythm.</span></div>
+                </div>
+              </details>
+              <div class="case-result" aria-label="Marlo proof points">
+                <div><strong>30+</strong><span>reporting cycles replaced</span></div>
+                <div><strong>5,000+</strong><span>creators sourced</span></div>
+              </div>
+            </article>
 
-              <div class="facts-grid">
-                <div class="fact-card">
-                  <span>Education</span>
-                  <strong>UC San Diego &middot; Rady School of Management</strong>
+            <article class="case-panel reveal">
+              <div class="case-head">
+                <div class="company-mark freewire" aria-hidden="true">
+                  <img src="/freewire-logo.svg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='../public/freewire-logo.svg';" />
                 </div>
-                <div class="fact-card">
-                  <span>Degree</span>
-                  <strong>B.S. Business Economics &middot; Jun 2023</strong>
-                </div>
-                <div class="fact-card">
-                  <span>Based in</span>
-                  <strong>San Francisco, CA</strong>
-                </div>
-                <div class="fact-card">
-                  <span>Focus</span>
-                  <strong>Strategy &amp; Ops &middot; BizOps &middot; GTM Ops</strong>
+                <div>
+                  <p class="case-meta">2023</p>
+                  <h3 class="case-title">Supply Chain Analyst Intern</h3>
+                  <p class="case-company">FreeWire Technologies</p>
                 </div>
               </div>
-            </div>
+              <p class="case-lede">Surfaced $30K in inventory discrepancies across multi-vendor operations by making reconciliation easier to see.</p>
+              <details class="case-expand">
+                <summary>Read case notes</summary>
+                <div class="case-details">
+                  <div class="case-detail"><strong>Problem</strong><span>Inventory records did not clearly match what operations needed to act on.</span></div>
+                  <div class="case-detail"><strong>Built</strong><span>A reconciliation process that made procurement gaps easier to identify across a multi-vendor supply chain.</span></div>
+                  <div class="case-detail"><strong>Result</strong><span>Surfaced discrepancy patterns that clarified where inventory visibility was breaking.</span></div>
+                </div>
+              </details>
+              <div class="case-result" aria-label="FreeWire proof points">
+                <div><strong>$30K</strong><span>inventory discrepancy identified</span></div>
+                <div><strong>Multi-vendor</strong><span>supply chain visibility</span></div>
+              </div>
+            </article>
           </div>
-        </section>
+        </div>
+      </section>
 
-        <section
-          class="channel section-observed"
-          id="experience"
-          data-channel-index="2"
-          aria-labelledby="experience-title"
-          hidden
-        >
-          <div class="section-shell experience-shell">
-            <div class="section-heading compact-heading">
-              <p class="eyebrow">Experience</p>
-              <h2 id="experience-title">Systems I&rsquo;ve Built</h2>
-              <p class="section-subtitle">
-                Proof that I can turn fragmented work into operating infrastructure.
+      <section class="story-section contact-section" id="contact">
+        <div class="section-shell">
+          <div class="contact-card reveal">
+            <div>
+              <h2 class="section-title">Let's talk operations, systems, or strategy.</h2>
+              <p class="section-copy">
+                If your team has messy workflows, unclear reporting, or handoffs that keep slowing people down, send a note.
               </p>
-            </div>
-
-            <div class="work-grid">
-              <article class="work-card reveal-card">
-                <div class="work-header">
-                  <a
-                    class="company-logo marlo-logo"
-                    href="https://www.marlo.today/"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open Marlo.Today website"
-                  >
-                    <img src="/marlo-logo.svg" alt="Marlo.Today logo" data-logo />
-                  </a>
-                  <div>
-                    <p class="work-date">Jan &mdash; Jun 2025</p>
-                    <h3>Marlo.Today</h3>
-                    <p>Business Operations Associate</p>
-                  </div>
-                </div>
-                <p class="work-summary">
-                  Turned fragmented GTM and customer workflows into clearer operating
-                  infrastructure for creator economy teams.
-                </p>
-                <ul class="impact-list">
-                  <li>
-                    Problem: campaign reporting, outreach status, customer feedback, and
-                    weekly updates lived across scattered docs and sheets.
-                  </li>
-                  <li>
-                    Built: consolidated 16+ docs/sheets into one reporting surface while
-                    managing GTM execution across 2 product campaigns.
-                  </li>
-                  <li>
-                    Result: clearer campaign visibility, a repeatable reporting cadence,
-                    and 70+ customer-call insights synthesized for product decisions.
-                  </li>
-                </ul>
-                <div class="metric-strip">
-                  <span><strong>16+</strong> docs consolidated</span>
-                  <span><strong>2</strong> product campaigns</span>
-                  <span><strong>26%</strong> response rate</span>
-                </div>
-              </article>
-
-              <article class="work-card reveal-card">
-                <div class="work-header">
-                  <a
-                    class="company-logo"
-                    href="https://www.freewiretech.com/"
-                    target="_blank"
-                    rel="noreferrer"
-                    aria-label="Open FreeWire Technologies website"
-                  >
-                    <img
-                      src="/freewire-logo.svg"
-                      alt="FreeWire Technologies logo"
-                      data-logo
-                    />
-                  </a>
-                  <div>
-                    <p class="work-date">Jun &mdash; Sep 2023</p>
-                    <h3>FreeWire Technologies</h3>
-                    <p>Supply Chain Analyst Intern</p>
-                  </div>
-                </div>
-                <p class="work-summary">
-                  Turned disconnected freight, inventory, and NPI data into supply chain
-                  visibility.
-                </p>
-                <ul class="impact-list">
-                  <li>
-                    Problem: freight activity, ERP records, BOM readiness, and material
-                    shortages were hard to see across systems and vendors.
-                  </li>
-                  <li>
-                    Built: Power BI logistics dashboard using Flexport data, plus
-                    reconciliation workflows across freight, RMAs, transfers, hazmat docs,
-                    and 3PL communication.
-                  </li>
-                  <li>
-                    Result: supported $70K NPI readiness and surfaced a $25K material
-                    shortage through inventory reconciliation.
-                  </li>
-                </ul>
-                <div class="metric-strip">
-                  <span><strong>$70K</strong> NPI readiness</span>
-                  <span><strong>$25K</strong> shortage identified</span>
-                  <span><strong>Power BI</strong> / Flexport</span>
-                </div>
-              </article>
-            </div>
-          </div>
-        </section>
-
-        <section
-          class="channel section-observed"
-          id="contact"
-          data-channel-index="3"
-          aria-labelledby="contact-title"
-          hidden
-        >
-          <div class="section-shell contact-shell">
-            <div class="contact-copy">
-              <p class="eyebrow">Contact</p>
-              <h2 id="contact-title">Talk through a messy workflow.</h2>
-              <p>
-                Send the context, constraints, and what needs to move. I&rsquo;ll respond with
-                the next useful step.
-              </p>
-              <div class="contact-icons" aria-label="Other ways to connect">
-                <a
-                  class="icon-button"
-                  href="https://www.linkedin.com/in/benhxu2/"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Open LinkedIn profile"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6Z" />
-                    <rect x="2" y="9" width="4" height="12" />
-                    <circle cx="4" cy="4" r="2" />
-                  </svg>
+              <div class="contact-note" aria-label="Social links">
+                <a href="https://www.linkedin.com/in/benhxu2/" target="_blank" rel="noreferrer" aria-label="LinkedIn">
+                  <img src="/linkedin-logo.svg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='../public/linkedin-logo.svg';" />
                 </a>
-                <a
-                  class="icon-button"
-                  href="https://github.com/benhxu"
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="Open GitHub profile"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
-                  </svg>
-                </a>
-                <a
-                  class="icon-button"
-                  href="mailto:benwebportfolio@gmail.com?subject=Opportunity%20for%20Ben%20Xu&amp;body=Hi%20Ben%2C%0A%0AI%20came%20across%20your%20portfolio%20and%20wanted%20to%20reach%20out%20about..."
-                  data-email-link
-                  aria-label="Email Ben Xu"
-                >
-                  <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="4" width="20" height="16" rx="2" />
-                    <polyline points="22,6 12,13 2,6" />
-                  </svg>
+                <a href="https://github.com/benhxu" target="_blank" rel="noreferrer" aria-label="GitHub">
+                  <img src="/github-logo.svg" alt="" loading="lazy" decoding="async" onerror="this.onerror=null; this.src='../public/github-logo.svg';" />
                 </a>
               </div>
             </div>
 
             <form
-              class="form contact-inbox"
+              class="contact-form contact-inbox"
               action="/api/contact"
               method="POST"
               data-contact-form
@@ -366,62 +258,31 @@
                   data-ph-no-capture
                 />
               </div>
-              <div class="row">
-                <label class="field">
-                  <span>Name</span>
-                  <input
-                    class="input"
-                    name="name"
-                    autocomplete="name"
-                    placeholder="Your name"
-                    data-ph-no-capture
-                    required
-                  />
-                </label>
-                <label class="field">
-                  <span>Email</span>
-                  <input
-                    class="input"
-                    name="email"
-                    type="email"
-                    autocomplete="email"
-                    placeholder="you@company.com"
-                    data-ph-no-capture
-                    required
-                  />
-                </label>
+              <div class="form-grid">
+                <div class="field">
+                  <label for="name">Name</label>
+                  <input id="name" name="name" autocomplete="name" placeholder="Your name" data-ph-no-capture required />
+                </div>
+                <div class="field">
+                  <label for="email">Email</label>
+                  <input id="email" name="email" type="email" autocomplete="email" placeholder="you@company.com" data-ph-no-capture required />
+                </div>
               </div>
-              <label class="field">
-                <span>Subject</span>
-                <input
-                  class="input"
-                  name="subject"
-                  placeholder="What should we talk about?"
-                  data-ph-no-capture
-                  required
-                />
-              </label>
-              <label class="field">
-                <span>Message</span>
-                <textarea
-                  class="input"
-                  name="message"
-                  placeholder="Let me know how I can help"
-                  data-ph-no-capture
-                  required
-                ></textarea>
-              </label>
-              <div class="form-actions">
-                <button class="btn primary" type="submit" data-contact-submit>
-                  Send message <span aria-hidden="true">&rarr;</span>
-                </button>
-                <p class="form-status" data-contact-status role="status" aria-live="polite"></p>
+              <div class="field">
+                <label for="subject">Subject</label>
+                <input id="subject" name="subject" placeholder="What should we talk about?" data-ph-no-capture required />
               </div>
+              <div class="field">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" placeholder="Let me know how I can help" data-ph-no-capture required></textarea>
+              </div>
+              <button class="submit-button" type="submit" data-contact-submit>Send message</button>
+              <p class="form-status" data-contact-status role="status" aria-live="polite"></p>
             </form>
           </div>
-        </section>
-      </main>
-    </div>
+        </div>
+      </section>
+    </main>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
