@@ -12,6 +12,12 @@ const smallViewportQuery = window.matchMedia("(max-width: 680px)");
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
+type NetworkInformationLike = {
+  saveData?: boolean;
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+};
 
 declare global {
   interface Window {
@@ -27,6 +33,11 @@ const sections = [
   { id: "experience", name: "Experience" },
   { id: "contact", name: "Contact" },
 ] as const;
+
+const getNetworkInformation = () =>
+  "connection" in navigator
+    ? (navigator as Navigator & { connection?: NetworkInformationLike }).connection
+    : undefined;
 
 const sessionId = (() => {
   const storageKey = "ben_xu_portfolio_session_id";
@@ -44,8 +55,19 @@ const computeLowPowerMode = () => {
   const deviceMemory = "deviceMemory" in navigator
     ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
     : 0;
+  const connection = getNetworkInformation();
+  const constrainedNetwork =
+    Boolean(connection?.saveData) ||
+    ["slow-2g", "2g", "3g"].includes(connection?.effectiveType ?? "") ||
+    (typeof connection?.downlink === "number" && connection.downlink > 0 && connection.downlink <= 0.7);
 
-  return isMobile || reducedMotion || hardwareConcurrency <= 4 || (deviceMemory > 0 && deviceMemory <= 4);
+  return (
+    isMobile ||
+    reducedMotion ||
+    constrainedNetwork ||
+    hardwareConcurrency <= 4 ||
+    (deviceMemory > 0 && deviceMemory <= 4)
+  );
 };
 
 const debugMetrics: Record<string, DebugValue> = {
@@ -834,12 +856,17 @@ window.addEventListener("load", () => {
   scheduleIdle(initAnalyticsProvider, 900);
   scheduleIdle(trackLoadPerformance, 1200);
   scheduleIdle(() => {
+    const connection = getNetworkInformation();
     track("performance_context", {
       device_memory: "deviceMemory" in navigator
         ? Number((navigator as Navigator & { deviceMemory?: number }).deviceMemory || 0)
         : null,
+      effective_connection_type: connection?.effectiveType ?? null,
       hardware_concurrency: navigator.hardwareConcurrency || null,
       low_power_mode: computeLowPowerMode(),
+      network_downlink: connection?.downlink ?? null,
+      network_rtt: connection?.rtt ?? null,
+      save_data: Boolean(connection?.saveData),
     });
   }, 1400);
 });

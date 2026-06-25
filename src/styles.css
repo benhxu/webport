@@ -512,6 +512,8 @@
         padding: clamp(74px, 8vw, 112px) clamp(22px, 4.4vw, 72px);
         isolation: isolate;
         counter-increment: story-section;
+        content-visibility: auto;
+        contain-intrinsic-size: 840px;
       }
 
       .story-section::before {
@@ -1229,6 +1231,24 @@
       @media (pointer: coarse) {
         .bridge-photo img {
           transform: none !important;
+        }
+      }
+
+      @media (max-width: 680px), (pointer: coarse) {
+        .paper-grain,
+        .home-dust,
+        .portfolio-world::before,
+        .portfolio-world::after {
+          display: none;
+        }
+
+        .bridge-hero::before {
+          opacity: 0.055;
+        }
+
+        .orbit-inner {
+          animation: none;
+          filter: none;
         }
       }
 
