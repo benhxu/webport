@@ -1,4 +1,5 @@
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? "https://webport-mu-seven.vercel.app/");
+const shouldSendEmail = process.env.SMOKE_SEND_EMAIL === "true";
 const apiUrl = new URL("/api/contact", baseUrl);
 
 let failed = false;
@@ -76,7 +77,7 @@ const timingResponse = await fetch(apiUrl, {
     email: "smoke@example.com",
     message: "This should fail timing before email delivery.",
     name: "Smoke Test",
-    startedAt: 1,
+    startedAt: Date.now(),
     subject: "Smoke test",
   }),
 });
@@ -94,6 +95,36 @@ if (timingResponse.status === 400 && rateLimitPolicy === "upstash") {
   fail(
     `POST timing smoke expected 400/upstash but received ${timingResponse.status}/${rateLimitPolicy ?? "no-policy"}`,
   );
+}
+
+if (shouldSendEmail) {
+  const deliveryResponse = await fetch(apiUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Origin: baseUrl.origin,
+    },
+    body: JSON.stringify({
+      email: "smoke@example.com",
+      message: "This is a production contact delivery smoke test from Codex.",
+      name: "Codex Smoke Test",
+      startedAt: Date.now() - 5_000,
+      subject: "Production contact smoke test",
+    }),
+  });
+  const deliveryBody = await deliveryResponse.json().catch(() => null);
+
+  if (deliveryResponse.status === 200 && deliveryBody?.ok === true) {
+    pass("Contact delivery smoke sent successfully");
+  } else {
+    fail(
+      `Contact delivery smoke expected 200 but received ${deliveryResponse.status}: ${
+        deliveryBody?.error ?? "unknown error"
+      }`,
+    );
+  }
+} else {
+  console.log("SKIP contact delivery smoke; set SMOKE_SEND_EMAIL=true to send one test email.");
 }
 
 if (failed) {

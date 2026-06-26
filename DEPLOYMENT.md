@@ -57,7 +57,7 @@ Confirm the contact endpoint reaches rate limiting without sending email:
 curl -i -X POST https://webport-mu-seven.vercel.app/api/contact \
   -H "Origin: https://webport-mu-seven.vercel.app" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Smoke Test","email":"smoke@example.com","subject":"Smoke test","message":"This should fail timing before email delivery.","startedAt":1}'
+  -d "{\"name\":\"Smoke Test\",\"email\":\"smoke@example.com\",\"subject\":\"Smoke test\",\"message\":\"This should fail timing before email delivery.\",\"startedAt\":$(date +%s)000}"
 ```
 
 Expected: `400 Please wait a moment and try again.`, `X-Request-Id`, and
@@ -71,6 +71,17 @@ The same checks are automated:
 ```bash
 npm run smoke:prod
 ```
+
+After `RESEND_API_KEY` and `CONTACT_TO_EMAIL` are configured, run one explicit
+delivery smoke test:
+
+```bash
+SMOKE_SEND_EMAIL=true npm run smoke:prod
+```
+
+Expected: the command passes and one test email arrives in the configured
+inbox. If it returns `503`, `RESEND_API_KEY` or `CONTACT_TO_EMAIL` is missing in
+Vercel, or Resend rejected the sender configuration.
 
 Use another deployed target with:
 

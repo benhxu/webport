@@ -84,7 +84,7 @@ Post-deploy durable limiter smoke test:
 curl -i -X POST https://webport-mu-seven.vercel.app/api/contact \
   -H "Content-Type: application/json" \
   -H "Origin: https://webport-mu-seven.vercel.app" \
-  -d '{"name":"Smoke Test","email":"smoke@example.com","subject":"Smoke test","message":"This should fail timing before email delivery.","startedAt":1}'
+  -d "{\"name\":\"Smoke Test\",\"email\":\"smoke@example.com\",\"subject\":\"Smoke test\",\"message\":\"This should fail timing before email delivery.\",\"startedAt\":$(date +%s)000}"
 ```
 
 Expected: `400`, `X-Request-Id`, and `X-RateLimit-Policy: upstash`. If the
@@ -95,6 +95,12 @@ Automated production smoke:
 
 ```bash
 npm run smoke:prod
+```
+
+Contact delivery smoke, after Resend env vars are configured:
+
+```bash
+SMOKE_SEND_EMAIL=true npm run smoke:prod
 ```
 
 ## Analytics
