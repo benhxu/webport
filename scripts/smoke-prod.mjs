@@ -87,6 +87,8 @@ expectHeader(timingResponse.headers, "x-request-id");
 
 if (timingResponse.status === 400 && rateLimitPolicy === "upstash") {
   pass("POST timing smoke reached durable Upstash rate limiter without sending email");
+} else if (timingResponse.status === 429 && rateLimitPolicy === "upstash") {
+  pass("POST timing smoke was rate limited by durable Upstash policy");
 } else if (timingResponse.status === 503 && rateLimitPolicy === "missing-upstash") {
   fail("Upstash is required in production but missing from Vercel environment variables");
 } else if (rateLimitPolicy === "memory-fallback") {
