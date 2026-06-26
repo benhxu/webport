@@ -1,6 +1,6 @@
 # Portfolio Analytics
 
-PostHog is the production analytics provider. The site records channel interest,
+PostHog is the production analytics provider. The site records section interest,
 active reading time, interaction intent, form conversion, performance, and
 runtime errors without capturing contact-form values. PostHog autocapture is
 disabled; the app only sends explicit custom events.
@@ -29,39 +29,38 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | Event | Properties | What it answers |
 | --- | --- | --- |
 | `site_loaded` | `pointer`, `reduced_motion`, `analytics_provider` | Which devices and accessibility preferences visit? |
-| `channel_viewed` | `channel`, `name`, `source` | Which channels are opened, and how did visitors reach them? |
-| `channel_dwell` | `channel`, `name`, `duration_ms`, `max_scroll_depth`, `scrolled`, `reason` | How long did visitors actively spend with each channel? |
-| `channel_scroll_started` | `channel` | Did a visitor begin reading overflow content? |
-| `channel_scroll_depth` | `channel`, `depth_percent` | How far did visitors read inside longer mobile channels? |
+| `section_viewed` | `section_id`, `section_name`, `source` | Which sections are viewed, and how did visitors reach them? |
+| `section_dwell` | `section_id`, `section_name`, `duration_ms`, `reason` | How long did visitors actively spend in each section? |
+| `section_link_clicked` | `target_section`, `label` | Which navigation or CTA links create intent? |
+| `page_scroll_depth` | `depth_percent`, `active_section` | How far down the overall page did visitors scroll? |
 | `hero_assembly_completed` | `duration_ms` | Did the signature landing animation finish? |
-| `cta_clicked` | `location`, `target_channel` | Which landing CTA generated intent? |
-| `ui_clicked` | `channel`, `tag`, `label`, `href`, `id` | What controls and links were used? |
-| `email_icon_clicked` | none | Did a visitor choose the prefilled email route? |
+| `ui_clicked` | `active_section`, `tag`, `label`, `href`, `id` | What controls and links were used? |
 | `outbound_link_clicked` | `destination`, `label` | Did visitors choose LinkedIn or GitHub? |
 | `contact_form_started` | none | Did a visitor begin engaging with the contact form? |
 | `contact_form_submitted` | `has_name`, `has_email` | How many visitors attempted to submit? |
-| `contact_form_success` | none | How many submissions were accepted by the contact API? |
-| `contact_form_error` | `status` | Where are contact attempts failing? |
+| `contact_form_success` | `request_id` | How many submissions were accepted by the contact API? |
+| `contact_form_error` | `status`, `request_id` | Where are contact attempts failing, and which Vercel log request should be inspected? |
 | `contact_field_focused` | `field` | Where does form engagement begin? |
 | `contact_field_completed` | `field`, `has_value` | At which field do visitors abandon? |
-| `engagement_heartbeat` | `visible_duration_ms`, `active_channel`, `channel_scroll_depth`, `scrolled` | Was the visitor still actively viewing the site? |
-| `page_hidden` / `page_visible` | visibility duration and active channel | How much of a session was genuinely visible? |
-| `session_ended` | total and visible duration, final channel | How long did the visit last and where did it end? |
+| `engagement_heartbeat` | `visible_duration_ms`, `active_section`, `max_scroll_depth`, `section_duration_ms` | Was the visitor still actively viewing the site? |
+| `page_hidden` / `page_visible` | visibility duration and active section | How much of a session was genuinely visible? |
+| `session_ended` | total and visible duration, final section | How long did the visit last and where did it end? |
 | `performance_context` | hardware and low-power context | What kind of device did the visitor use? |
 | `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
-| `resource_summary` | resource, script, image, font, and transfer counts | How heavy was the page for the visitor? |
+| `resource_summary` | resource, script, image, stylesheet, and transfer counts | How heavy was the page for the visitor? |
 | `web_vitals` | `lcp_ms`, `cls`, `inp_ms`, long-task values | Did visitors experience layout shift or interaction lag? |
 | `client_error` | `type` | Did the browser encounter a runtime failure? |
+| `color_scheme_changed` | `color_scheme` | Did the visitor's system color preference change during the session? |
 
 ## Suggested Dashboard
 
-1. Funnel: `site_loaded` -> `channel_viewed` with `channel = Experience` ->
-   `cta_clicked` or `channel_viewed` with `channel = Contact` ->
+1. Funnel: `site_loaded` -> `section_viewed` with `section_id = experience` ->
+   `section_link_clicked` or `section_viewed` with `section_id = contact` ->
    `contact_form_submitted` -> `contact_form_success`.
-2. Trend: median `channel_dwell.duration_ms`, broken down by `name`.
-3. Funnel: `channel_scroll_depth` at `25` -> `50` -> `75` -> `100`.
-4. Trend: `channel_viewed`, broken down by `source`.
-5. Trend: `email_icon_clicked` and `outbound_link_clicked`.
+2. Trend: median `section_dwell.duration_ms`, broken down by `section_name`.
+3. Funnel: `page_scroll_depth` at `25` -> `50` -> `75` -> `100`.
+4. Trend: `section_viewed`, broken down by `source`.
+5. Trend: `outbound_link_clicked`, broken down by `destination`.
 6. Trend: `contact_form_error`, broken down by `status`.
 7. Performance: p75 `web_vitals.lcp_ms`, `web_vitals.inp_ms`, and
    `web_vitals.cls`, broken down by viewport width.

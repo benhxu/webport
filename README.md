@@ -2,8 +2,9 @@
 
 **Live site:** https://webport-mu-seven.vercel.app/
 
-A four-section personal portfolio presented as a BXTV-style signal interface.
-The visual idea is simple: scattered operational signals resolve into clarity.
+A four-section personal portfolio built around an editorial San Francisco bridge
+hero. The visual idea is simple: scattered operational signals resolve into
+clarity.
 
 - **Home:** animated signal assembly landing page
 - **About:** profile, background, education, and operating perspective
@@ -16,9 +17,10 @@ The visual idea is simple: scattered operational signals resolve into clarity.
 | --- | --- |
 | Build | Vite 8 + TypeScript 5.8 |
 | UI | Static HTML, CSS, and vanilla TypeScript |
-| Motion | GSAP and Lenis |
+| Motion | CSS transforms plus vanilla TypeScript requestAnimationFrame |
 | Email | Vercel serverless function at `/api/contact` plus Resend |
-| Analytics | PostHog custom events, optional session replay, optional custom beacon endpoint |
+| Abuse protection | Contact form origin checks, honeypot, timing checks, and optional Upstash Redis rate limiting |
+| Analytics | PostHog custom events, optional masked session replay, optional custom beacon endpoint |
 | Hosting | Vercel |
 
 No React, no CSS framework, and no runtime content CMS. The visible content for
@@ -34,13 +36,15 @@ webport/
   docs/
     QA.md            Release QA checklist
   public/
+    bridge-home-bg*.jpg
     favicon.svg
-    hero-art.webp
     marlo-logo.svg
     freewire-logo.svg
+    linkedin-logo.svg
+    github-logo.svg
     og-tv.png
   src/
-    main.ts          Broadcast navigation, GSAP motion, analytics, form handling
+    main.ts          Hero motion, section tracking, analytics, form handling, debug HUD
     styles.css       Site styling and responsive behavior
   index.html         Static portfolio markup and content
   vercel.json        Security headers, CSP, and cache headers
@@ -73,7 +77,14 @@ RESEND_API_KEY=re_your_resend_api_key
 CONTACT_TO_EMAIL=your_private_receiving_email@example.com
 CONTACT_FROM_EMAIL=Ben Xu Portfolio <onboarding@resend.dev>
 CONTACT_ALLOWED_ORIGINS=https://webport-mu-seven.vercel.app
+UPSTASH_REDIS_REST_URL=https://your-upstash-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
+CONTACT_ALLOW_MEMORY_RATE_LIMIT=false
 ```
+
+In production, `/api/contact` fails closed if Upstash is missing or unavailable.
+That prevents a deploy from silently falling back to weaker in-memory rate
+limiting.
 
 ## Production Check
 

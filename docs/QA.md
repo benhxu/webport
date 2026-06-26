@@ -13,19 +13,19 @@ analytics, or contact-form changes.
 | Browser console has no uncaught runtime errors | [ ] |
 | No horizontal scroll at desktop or mobile widths | [ ] |
 
-## Broadcast Navigation
+## Section Navigation
 
 | Test | Pass |
 | --- | --- |
-| BX brand opens the Home channel | [ ] |
-| About nav opens the About channel | [ ] |
-| Experience nav opens the Experience channel | [ ] |
-| Contact nav opens the Contact channel | [ ] |
-| Hero "View Experience" button opens Experience | [ ] |
-| Hero "Contact" button opens Contact | [ ] |
+| BX brand scrolls to Home | [ ] |
+| About nav scrolls to About | [ ] |
+| Experience nav scrolls to Experience | [ ] |
+| Contact nav scrolls to Contact | [ ] |
+| Hero "View work" button scrolls to Experience | [ ] |
+| Hero "Contact" button scrolls to Contact | [ ] |
 | Direct hashes work: `#home`, `#about`, `#experience`, `#contact` | [ ] |
-| Wheel, touch, and keyboard channel changes do not trap the user | [ ] |
-| Signal transition feels smooth and does not flash broken layout | [ ] |
+| Wheel, touch, and keyboard browsing do not trap the user | [ ] |
+| Hero assembly feels smooth and reduced-motion visitors see the settled state | [ ] |
 
 ## Responsive Layout
 
@@ -49,7 +49,7 @@ analytics, or contact-form changes.
 | Icon-only social links have `aria-label` text | [ ] |
 | Color contrast is readable in dark and light mode | [ ] |
 | `prefers-reduced-motion: reduce` avoids the heavy hero assembly animation | [ ] |
-| Screen reader announces the current channel via the hidden live region | [ ] |
+| Nav links set `aria-current="page"` as sections become active | [ ] |
 
 ## Contact Form
 
@@ -64,6 +64,8 @@ analytics, or contact-form changes.
 | 6 submissions from same warm instance within 1 hour | 6th returns 429 | [ ] |
 | External origin POST | API returns 403 | [ ] |
 | Missing Resend env vars | API returns 503 without crashing | [ ] |
+| Missing Upstash env vars in production | API fails closed with 503 and `X-RateLimit-Policy: missing-upstash` | [ ] |
+| Failed API response | User sees friendly error plus request reference | [ ] |
 
 Origin-check curl:
 
@@ -76,6 +78,25 @@ curl -i -X POST https://webport-mu-seven.vercel.app/api/contact \
 
 Expected: `403`.
 
+Post-deploy durable limiter smoke test:
+
+```bash
+curl -i -X POST https://webport-mu-seven.vercel.app/api/contact \
+  -H "Content-Type: application/json" \
+  -H "Origin: https://webport-mu-seven.vercel.app" \
+  -d '{"name":"Smoke Test","email":"smoke@example.com","subject":"Smoke test","message":"This should fail timing before email delivery.","startedAt":1}'
+```
+
+Expected: `400`, `X-Request-Id`, and `X-RateLimit-Policy: upstash`. If the
+policy is `memory-fallback`, `missing-upstash`, or the response is `503`, add or
+fix the Upstash Vercel environment variables.
+
+Automated production smoke:
+
+```bash
+npm run smoke:prod
+```
+
 ## Analytics
 
 Use PostHog Activity, Debugger, or Live events.
@@ -84,10 +105,10 @@ Use PostHog Activity, Debugger, or Live events.
 | --- | --- | --- |
 | `$pageview` | Load the site | [ ] |
 | `site_loaded` | Load the site | [ ] |
-| `channel_viewed` | Navigate between channels | [ ] |
-| `channel_dwell` | Leave a channel after viewing it | [ ] |
+| `section_viewed` | Navigate between sections | [ ] |
+| `section_dwell` | Leave a section after viewing it | [ ] |
 | `hero_assembly_completed` | Let the landing animation finish | [ ] |
-| `cta_clicked` | Click a hero CTA | [ ] |
+| `section_link_clicked` | Click a nav link or hero CTA | [ ] |
 | `ui_clicked` | Click any button or link | [ ] |
 | `outbound_link_clicked` | Open LinkedIn or GitHub | [ ] |
 | `contact_form_started` | Focus or type into the contact form | [ ] |
@@ -96,6 +117,7 @@ Use PostHog Activity, Debugger, or Live events.
 | `contact_form_error` | Trigger invalid API response or rate limit | [ ] |
 | `contact_field_focused` | Focus a form field | [ ] |
 | `contact_field_completed` | Change a form field | [ ] |
+| `page_scroll_depth` | Scroll to 25%, 50%, 75%, and 100% | [ ] |
 | `performance_timing` | Load the site and wait for idle callback | [ ] |
 | `resource_summary` | Load the site and wait for idle callback | [ ] |
 | `web_vitals` | Leave the page or close the tab | [ ] |
@@ -117,8 +139,8 @@ Run Lighthouse in an incognito window against the deployed site.
 | CLS | < 0.1 | < 0.1 |
 | Total Blocking Time | < 200ms | < 300ms |
 
-Also test manually on a phone. The hero animation should feel smooth, channel
-switches should feel responsive, and the contact form should not jump or resize
+Also test manually on a phone. The hero animation should feel smooth, section
+navigation should feel responsive, and the contact form should not jump or resize
 awkwardly when the mobile keyboard opens.
 
 ## Security Headers
@@ -128,10 +150,14 @@ Verify production response headers include:
 | Header | Pass |
 | --- | --- |
 | `Content-Security-Policy` | [ ] |
+| CSP does not include `'unsafe-inline'` | [ ] |
 | `X-Frame-Options: DENY` | [ ] |
 | `X-Content-Type-Options: nosniff` | [ ] |
 | `Referrer-Policy: strict-origin-when-cross-origin` | [ ] |
 | `Permissions-Policy` | [ ] |
+| `Strict-Transport-Security` | [ ] |
+| `Cross-Origin-Opener-Policy` | [ ] |
+| `Cross-Origin-Resource-Policy` | [ ] |
 | `/api/*` returns `Cache-Control: no-store` | [ ] |
 | `/assets/*` returns long-lived immutable cache headers | [ ] |
 
@@ -139,10 +165,7 @@ Verify production response headers include:
 
 | Test | Pass |
 | --- | --- |
-| Marlo.Today link opens `https://www.marlo.today/` | [ ] |
-| FreeWire Technologies link opens `https://www.freewiretech.com/` | [ ] |
 | LinkedIn link opens the correct profile | [ ] |
 | GitHub link opens the correct profile | [ ] |
-| Email icon opens a prefilled mailto draft | [ ] |
 | Page title and meta description are correct | [ ] |
 | OG image renders in link previews | [ ] |

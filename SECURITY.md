@@ -13,6 +13,9 @@ repository.
 | `CONTACT_TO_EMAIL` | Server only | Receives contact-form messages |
 | `CONTACT_FROM_EMAIL` | Server only | Sender identity used by Resend |
 | `CONTACT_ALLOWED_ORIGINS` | Server only | Comma-separated list of allowed website origins |
+| `UPSTASH_REDIS_REST_URL` | Server only | Durable Redis-backed contact-form rate limiting |
+| `UPSTASH_REDIS_REST_TOKEN` | Server only | Upstash REST token for the contact-form limiter |
+| `CONTACT_ALLOW_MEMORY_RATE_LIMIT` | Server only | Emergency-only override for production rate-limit fallback |
 | `VITE_POSTHOG_KEY` | Browser | Public PostHog project token |
 | `VITE_POSTHOG_HOST` | Browser | PostHog ingest host |
 | `VITE_POSTHOG_SESSION_REPLAY` | Browser | Enables or disables PostHog session replay |
@@ -37,15 +40,18 @@ The `/api/contact` serverless function includes:
 | Server-side validation | Validates name, email, subject, and message length |
 | Honeypot | Rejects submissions that fill the hidden `website` field |
 | Timing check | Rejects submissions posted too quickly after form start |
-| Rate limiting | Allows 5 submissions per IP per hour per warm serverless instance |
-| Error handling | Returns generic client-safe errors |
+| Rate limiting | Allows 5 submissions per IP per hour through Upstash Redis in production |
+| Diagnostics | Adds `X-Request-Id` and client-safe `requestId` values so failed submissions can be traced in Vercel logs |
+| Error handling | Returns generic client-safe errors and logs server-side details by request ID |
 
 ### Rate Limiting Caveat
 
-The current limiter uses a module-scope `Map`. This works on warm Vercel
-function instances and helps with casual spam, but it is not a durable global
-limit because cold starts create fresh memory. If spam becomes a real problem,
-move the counter to a shared store such as Upstash Redis.
+The durable limiter requires `UPSTASH_REDIS_REST_URL` and
+`UPSTASH_REDIS_REST_TOKEN` in Vercel. In production, if either variable is
+missing or Upstash is temporarily unreachable, the API fails closed with `503`
+instead of sending email behind weaker in-memory protection. Local development
+still uses a module-scope `Map` fallback. `CONTACT_ALLOW_MEMORY_RATE_LIMIT=true`
+exists only as an emergency production override.
 
 ## Security Headers
 
@@ -58,9 +64,16 @@ move the counter to a shared store such as Upstash Redis.
 | `X-Content-Type-Options: nosniff` | Prevents MIME sniffing |
 | `Referrer-Policy: strict-origin-when-cross-origin` | Limits referrer leakage |
 | `Permissions-Policy` | Disables unused browser APIs such as camera, mic, geolocation, payment, and USB |
+| `Strict-Transport-Security` | Forces HTTPS for repeat visitors |
+| `Cross-Origin-Opener-Policy` | Isolates browsing context where possible |
+| `Cross-Origin-Resource-Policy` | Prevents other origins from embedding same-origin resources |
+| `X-Permitted-Cross-Domain-Policies` | Blocks legacy cross-domain policy files |
 
 Run the production URL through a header scanner after deploy, then confirm the
 site still loads fonts, analytics, and contact-form requests.
+
+The CSP intentionally omits `'unsafe-inline'`. Hero animation constants live in
+data attributes and are applied by the trusted first-party script.
 
 ## PostHog Privacy
 

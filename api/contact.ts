@@ -1,3 +1,5 @@
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 import { Resend } from "resend";
 
 declare const process: {
@@ -28,17 +30,37 @@ type ApiResponse = {
 const PRIMARY_ALLOWED_ORIGIN = "https://webport-mu-seven.vercel.app";
 const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
-// Temporary serverless-friendly fallback. This protects warm instances, but a
-// durable store such as Upstash Redis is the right upgrade for strict limits.
 const requestTimestamps = new Map<string, number[]>();
+type RateLimitDecision = "allowed" | "limited" | "unavailable";
 
 const sendJson = (
   response: ApiResponse,
   body: Record<string, unknown>,
   statusCode = 200,
+  requestId?: string,
 ) => {
   response.setHeader("Cache-Control", "no-store");
+  if (requestId) response.setHeader("X-Request-Id", requestId);
   response.status(statusCode).json(body);
+};
+
+const createRequestId = () =>
+  `contact_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+
+const logContactWarning = (
+  requestId: string,
+  message: string,
+  detail?: Record<string, unknown>,
+) => {
+  console.warn("[contact]", { level: "warning", requestId, message, ...detail });
+};
+
+const logContactError = (
+  requestId: string,
+  message: string,
+  detail?: Record<string, unknown>,
+) => {
+  console.error("[contact]", { level: "error", requestId, message, ...detail });
 };
 
 const clean = (value: unknown) => (typeof value === "string" ? value.trim() : "");
@@ -150,58 +172,179 @@ const isRateLimited = (clientIp: string) => {
   return false;
 };
 
+const requiresDurableRateLimit = () =>
+  process.env.CONTACT_REQUIRE_DURABLE_RATE_LIMIT === "true" ||
+  (
+    process.env.VERCEL_ENV === "production" &&
+    process.env.CONTACT_ALLOW_MEMORY_RATE_LIMIT !== "true"
+  );
+
+const getDurableRateLimiter = (() => {
+  let limiter: Ratelimit | null | undefined;
+
+  return () => {
+    if (limiter !== undefined) return limiter;
+
+    const url = process.env.UPSTASH_REDIS_REST_URL;
+    const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+    if (!url || !token) {
+      limiter = null;
+      return limiter;
+    }
+
+    limiter = new Ratelimit({
+      redis: new Redis({ url, token, enableTelemetry: false }),
+      limiter: Ratelimit.slidingWindow(RATE_LIMIT_MAX_REQUESTS, "1 h"),
+      analytics: true,
+      enableProtection: true,
+      ephemeralCache: new Map(),
+      prefix: "@benxu/webport/contact",
+      timeout: 1_500,
+    });
+
+    return limiter;
+  };
+})();
+
+const applyRateLimit = async (
+  clientIp: string,
+  requestId: string,
+  response: ApiResponse,
+) : Promise<RateLimitDecision> => {
+  const durableLimiter = getDurableRateLimiter();
+
+  if (durableLimiter) {
+    try {
+      const result = await durableLimiter.limit(clientIp);
+      response.setHeader("X-RateLimit-Limit", String(result.limit));
+      response.setHeader("X-RateLimit-Policy", "upstash");
+      response.setHeader("X-RateLimit-Remaining", String(Math.max(0, result.remaining)));
+      response.setHeader("X-RateLimit-Reset", String(result.reset));
+
+      if (!result.success) {
+        response.setHeader(
+          "Retry-After",
+          String(Math.max(1, Math.ceil((result.reset - Date.now()) / 1000))),
+        );
+        return "limited";
+      }
+
+      return "allowed";
+    } catch (error) {
+      logContactWarning(requestId, "durable rate limiter failed; using memory fallback", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+
+      if (requiresDurableRateLimit()) {
+        response.setHeader("X-RateLimit-Policy", "upstash-unavailable");
+        return "unavailable";
+      }
+    }
+  }
+
+  if (!durableLimiter && requiresDurableRateLimit()) {
+    response.setHeader("X-RateLimit-Policy", "missing-upstash");
+    logContactError(requestId, "durable rate limiter is required but not configured");
+    return "unavailable";
+  }
+
+  response.setHeader("X-RateLimit-Limit", String(RATE_LIMIT_MAX_REQUESTS));
+  response.setHeader("X-RateLimit-Policy", "memory-fallback");
+  if (isRateLimited(clientIp)) {
+    response.setHeader("Retry-After", String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
+    return "limited";
+  }
+
+  return "allowed";
+};
+
 export default async function handler(request: ApiRequest, response: ApiResponse) {
+  const requestId = createRequestId();
+  response.setHeader("X-Request-Id", requestId);
+
   if (request.method !== "POST") {
     response.setHeader("Allow", "POST");
-    sendJson(response, { ok: false, error: "Method not allowed." }, 405);
+    sendJson(response, { ok: false, error: "Method not allowed.", requestId }, 405, requestId);
     return;
   }
 
   const contentType = getHeader(request.headers, "content-type") ?? "";
   if (!contentType.toLowerCase().startsWith("application/json")) {
-    sendJson(response, { ok: false, error: "Content type must be application/json." }, 415);
+    sendJson(
+      response,
+      { ok: false, error: "Content type must be application/json.", requestId },
+      415,
+      requestId,
+    );
     return;
   }
 
   const origin = getHeader(request.headers, "origin");
   if (!origin || !isAllowedOrigin(origin)) {
-    sendJson(response, { ok: false, error: "Invalid request." }, 403);
+    logContactWarning(requestId, "blocked invalid origin", { origin: origin ?? "missing" });
+    sendJson(response, { ok: false, error: "Invalid request.", requestId }, 403, requestId);
     return;
   }
 
   const contentLength = Number(getHeader(request.headers, "content-length") ?? 0);
   if (contentLength > 10_000) {
-    sendJson(response, { ok: false, error: "Message is too large." }, 413);
+    sendJson(response, { ok: false, error: "Message is too large.", requestId }, 413, requestId);
     return;
   }
 
   const payload = readPayload(request.body);
   if (!payload) {
-    sendJson(response, { ok: false, error: "Invalid request." }, 400);
+    sendJson(response, { ok: false, error: "Invalid request.", requestId }, 400, requestId);
     return;
   }
 
   const validatedPayload = validatePayload(payload);
   if (!validatedPayload) {
-    sendJson(response, { ok: false, error: "Please check the form fields." }, 400);
+    sendJson(
+      response,
+      { ok: false, error: "Please check the form fields.", requestId },
+      400,
+      requestId,
+    );
     return;
   }
 
   const { email, message, name, startedAt, subject, website } = validatedPayload;
 
   if (website) {
-    sendJson(response, { ok: false, error: "Invalid request." }, 400);
+    logContactWarning(requestId, "honeypot field was populated");
+    sendJson(response, { ok: false, error: "Invalid request.", requestId }, 400, requestId);
     return;
   }
 
-  if (isRateLimited(getClientIp(request.headers))) {
-    response.setHeader("Retry-After", String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
-    sendJson(response, { ok: false, error: "Too many requests. Please try again later." }, 429);
+  const rateLimitDecision = await applyRateLimit(getClientIp(request.headers), requestId, response);
+  if (rateLimitDecision === "unavailable") {
+    sendJson(
+      response,
+      { ok: false, error: "Contact delivery is temporarily unavailable.", requestId },
+      503,
+      requestId,
+    );
+    return;
+  }
+
+  if (rateLimitDecision === "limited") {
+    sendJson(
+      response,
+      { ok: false, error: "Too many requests. Please try again later.", requestId },
+      429,
+      requestId,
+    );
     return;
   }
 
   if (!Number.isFinite(startedAt) || Date.now() - startedAt < 1_200) {
-    sendJson(response, { ok: false, error: "Please wait a moment and try again." }, 400);
+    sendJson(
+      response,
+      { ok: false, error: "Please wait a moment and try again.", requestId },
+      400,
+      requestId,
+    );
     return;
   }
 
@@ -210,7 +353,13 @@ export default async function handler(request: ApiRequest, response: ApiResponse
   const from = process.env.CONTACT_FROM_EMAIL ?? "Ben Xu Portfolio <onboarding@resend.dev>";
 
   if (!apiKey || !to) {
-    sendJson(response, { ok: false, error: "Contact delivery is temporarily unavailable." }, 503);
+    logContactError(requestId, "missing Resend delivery environment");
+    sendJson(
+      response,
+      { ok: false, error: "Contact delivery is temporarily unavailable.", requestId },
+      503,
+      requestId,
+    );
     return;
   }
 
@@ -238,13 +387,19 @@ export default async function handler(request: ApiRequest, response: ApiResponse
     });
 
     if (error) {
-      sendJson(response, { ok: false, error: "Email delivery failed." }, 500);
+      logContactError(requestId, "Resend returned an error", {
+        error: "message" in error ? error.message : String(error),
+      });
+      sendJson(response, { ok: false, error: "Email delivery failed.", requestId }, 500, requestId);
       return;
     }
-  } catch {
-    sendJson(response, { ok: false, error: "Email delivery failed." }, 500);
+  } catch (error) {
+    logContactError(requestId, "Resend request failed", {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    sendJson(response, { ok: false, error: "Email delivery failed.", requestId }, 500, requestId);
     return;
   }
 
-  sendJson(response, { ok: true });
+  sendJson(response, { ok: true, requestId }, 200, requestId);
 }

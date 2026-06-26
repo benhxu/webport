@@ -12,6 +12,11 @@ const smallViewportQuery = window.matchMedia("(max-width: 680px)");
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
+type ContactApiResponse = {
+  ok?: boolean;
+  error?: string;
+  requestId?: string;
+};
 type NetworkInformationLike = {
   saveData?: boolean;
   effectiveType?: string;
@@ -79,6 +84,36 @@ const debugMetrics: Record<string, DebugValue> = {
 };
 let debugPanel: HTMLElement | null = null;
 
+const applyMotionTokens = () => {
+  const motionProperties = [
+    ["ox", "--ox"],
+    ["oy", "--oy"],
+    ["or", "--or"],
+    ["os", "--os"],
+    ["delay", "--delay"],
+    ["floatDelay", "--float-delay"],
+  ] as const;
+  const lineProperties = [
+    ["lx", "--lx"],
+    ["ly", "--ly"],
+    ["lr", "--lr"],
+  ] as const;
+
+  document.querySelectorAll<HTMLElement | SVGElement>("[data-ox]").forEach((element) => {
+    motionProperties.forEach(([dataKey, cssVariable]) => {
+      const value = element.dataset[dataKey];
+      if (value) element.style.setProperty(cssVariable, value);
+    });
+  });
+
+  document.querySelectorAll<SVGElement>("[data-lx]").forEach((element) => {
+    lineProperties.forEach(([dataKey, cssVariable]) => {
+      const value = element.dataset[dataKey];
+      if (value) element.style.setProperty(cssVariable, value);
+    });
+  });
+};
+
 const renderDebugPanel = () => {
   if (!DEBUG_MODE) return;
   if (!debugPanel) {
@@ -88,10 +123,20 @@ const renderDebugPanel = () => {
     document.body.append(debugPanel);
   }
 
-  const rows = Object.entries(debugMetrics)
-    .map(([key, value]) => `<span>${key}</span><b>${String(value ?? "-")}</b>`)
-    .join("");
-  debugPanel.innerHTML = `<strong>Portfolio HUD</strong>${rows}`;
+  const title = document.createElement("strong");
+  title.textContent = "Portfolio HUD";
+
+  const rows = Object.entries(debugMetrics).map(([key, value]) => {
+    const label = document.createElement("span");
+    label.textContent = key;
+
+    const metric = document.createElement("b");
+    metric.textContent = String(value ?? "-");
+
+    return [label, metric] as const;
+  });
+
+  debugPanel.replaceChildren(title, ...rows.flat());
 };
 
 const updateDebugMetric = (key: string, value: DebugValue) => {
@@ -100,6 +145,7 @@ const updateDebugMetric = (key: string, value: DebugValue) => {
 };
 
 renderDebugPanel();
+applyMotionTokens();
 
 const buildAnalyticsPayload = (eventName: string, payload: TrackPayload = {}) => ({
   event: eventName,
@@ -576,11 +622,13 @@ const initContactForm = () => {
         signal: controller.signal,
       }).finally(() => globalThis.clearTimeout(timeoutId));
 
-      const responseBody = await response.json().catch(() => null);
+      const responseBody = await response.json().catch(() => null) as ContactApiResponse | null;
       if (!response.ok || responseBody?.ok !== true) {
         const requestError = new Error(responseBody?.error || "Form submission failed") as Error & {
+          requestId?: string;
           status?: number;
         };
+        requestError.requestId = responseBody?.requestId;
         requestError.status = response.status;
         throw requestError;
       }
@@ -588,13 +636,18 @@ const initContactForm = () => {
       form.reset();
       resetStartedAt();
       setStatus("Message sent - thanks.", "success");
-      track("contact_form_success");
+      track("contact_form_success", {
+        request_id: responseBody.requestId ?? null,
+      });
     } catch (error) {
-      const statusCode = error instanceof Error && "status" in error
-        ? Number((error as Error & { status?: number }).status) || "network"
-        : "network";
-      setStatus("Message could not send. Please try again in a moment.", "error");
-      track("contact_form_error", { status: statusCode });
+      const contactError = error as Error & { requestId?: string; status?: number };
+      const statusCode = typeof contactError.status === "number" ? contactError.status : "network";
+      const reference = contactError.requestId ? ` Reference: ${contactError.requestId}.` : "";
+      setStatus(`Message could not send. Please try again in a moment.${reference}`, "error");
+      track("contact_form_error", {
+        request_id: contactError.requestId ?? null,
+        status: statusCode,
+      });
     } finally {
       submitButton.disabled = false;
       form.removeAttribute("aria-busy");

@@ -6,13 +6,17 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check:ship": "npm run build && npm audit --omit=dev",
+    "smoke:prod": "node scripts/smoke-prod.mjs"
   },
   "devDependencies": {
     "typescript": "^5.8.3",
     "vite": "^8.0.16"
   },
   "dependencies": {
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.38.0",
     "posthog-js": "^1.386.3",
     "resend": "^6.12.4"
   }
