@@ -37,9 +37,9 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | `ui_clicked` | `active_section`, `tag`, `label`, `href`, `id` | What controls and links were used? |
 | `outbound_link_clicked` | `destination`, `label` | Did visitors choose LinkedIn or GitHub? |
 | `contact_form_started` | none | Did a visitor begin engaging with the contact form? |
-| `contact_form_submitted` | `has_name`, `has_email` | How many visitors attempted to submit? |
-| `contact_form_success` | `request_id` | How many submissions were accepted by the contact API? |
-| `contact_form_error` | `status`, `request_id` | Where are contact attempts failing, and which Vercel log request should be inspected? |
+| `contact_form_submitted` | `has_name`, `has_email`, `provider` | How many visitors attempted to submit? |
+| `contact_form_success` | `provider` | How many submissions were accepted by Formspree? |
+| `contact_form_error` | `status`, `provider` | Where are contact attempts failing? |
 | `contact_field_focused` | `field` | Where does form engagement begin? |
 | `contact_field_completed` | `field`, `has_value` | At which field do visitors abandon? |
 | `engagement_heartbeat` | `visible_duration_ms`, `active_section`, `max_scroll_depth`, `section_duration_ms` | Was the visitor still actively viewing the site? |

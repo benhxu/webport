@@ -18,8 +18,8 @@ clarity.
 | Build | Vite 8 + TypeScript 5.8 |
 | UI | Static HTML, CSS, and vanilla TypeScript |
 | Motion | CSS transforms plus vanilla TypeScript requestAnimationFrame |
-| Email | Vercel serverless function at `/api/contact` plus Resend |
-| Abuse protection | Contact form origin checks, honeypot, timing checks, and optional Upstash Redis rate limiting |
+| Email | Formspree-hosted contact form |
+| Abuse protection | Browser validation, hidden honeypot, Formspree spam filtering, and strict CSP |
 | Analytics | PostHog custom events, optional masked session replay, optional custom beacon endpoint |
 | Hosting | Vercel |
 
@@ -31,8 +31,6 @@ and form handling live in `src/main.ts`; styling lives in `src/styles.css`.
 
 ```text
 webport/
-  api/
-    contact.ts       Serverless contact handler with validation, origin checks, rate limiting, and Resend
   docs/
     QA.md            Release QA checklist
   public/
@@ -49,7 +47,7 @@ webport/
   index.html         Static portfolio markup and content
   vercel.json        Security headers, CSP, and cache headers
   ANALYTICS.md       PostHog event schema and dashboard ideas
-  DEPLOYMENT.md      Vercel, Resend, and PostHog setup
+  DEPLOYMENT.md      Vercel, Formspree, and PostHog setup
   SECURITY.md        Security posture and operational notes
 ```
 
@@ -65,26 +63,15 @@ The dev server usually runs at `http://localhost:5173`.
 ## Environment Variables
 
 Use `.env.local` locally and Vercel project environment variables in production.
-Server-only values must not use the `VITE_` prefix.
 
 ```env
-VITE_CONTACT_FORM_ENDPOINT=/api/contact
 VITE_POSTHOG_KEY=phc_your_project_key
 VITE_POSTHOG_HOST=https://us.i.posthog.com
 VITE_POSTHOG_SESSION_REPLAY=false
-
-RESEND_API_KEY=re_your_resend_api_key
-CONTACT_TO_EMAIL=your_private_receiving_email@example.com
-CONTACT_FROM_EMAIL=Ben Xu Portfolio <onboarding@resend.dev>
-CONTACT_ALLOWED_ORIGINS=https://webport-mu-seven.vercel.app
-UPSTASH_REDIS_REST_URL=https://your-upstash-url.upstash.io
-UPSTASH_REDIS_REST_TOKEN=your_upstash_rest_token
-CONTACT_ALLOW_MEMORY_RATE_LIMIT=false
 ```
 
-In production, `/api/contact` fails closed if Upstash is missing or unavailable.
-That prevents a deploy from silently falling back to weaker in-memory rate
-limiting.
+The Formspree endpoint is public by design and is wired directly into the form.
+The destination inbox is configured inside Formspree, not in this repo.
 
 ## Production Check
 

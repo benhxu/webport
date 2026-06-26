@@ -1,4 +1,4 @@
-const CONTACT_FORM_ENDPOINT = import.meta.env.VITE_CONTACT_FORM_ENDPOINT ?? "/api/contact";
+const CONTACT_FORM_ENDPOINT = "https://formspree.io/f/mbdvorzn";
 const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "";
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY ?? "";
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com";
@@ -12,10 +12,12 @@ const smallViewportQuery = window.matchMedia("(max-width: 680px)");
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
-type ContactApiResponse = {
+type ContactSubmitResponse = {
   ok?: boolean;
-  error?: string;
-  requestId?: string;
+  errors?: Array<{
+    field?: string;
+    message?: string;
+  }>;
 };
 type NetworkInformationLike = {
   saveData?: boolean;
@@ -547,18 +549,13 @@ const initContactForm = () => {
   const form = document.querySelector<HTMLFormElement>("[data-contact-form]");
   const status = document.querySelector<HTMLElement>("[data-contact-status]");
   const submitButton = document.querySelector<HTMLButtonElement>("[data-contact-submit]");
-  const startedAtField = form?.querySelector<HTMLInputElement>("[name=\"startedAt\"]");
   if (!form || !status || !submitButton) return;
 
-  const resetStartedAt = () => {
-    if (startedAtField) startedAtField.value = String(Date.now());
-  };
   let formStartTracked = false;
 
   const markFormStarted = () => {
     if (formStartTracked) return;
     formStartTracked = true;
-    resetStartedAt();
     track("contact_form_started");
   };
 
@@ -574,36 +571,26 @@ const initContactForm = () => {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!startedAtField?.value) resetStartedAt();
     const formData = new FormData(form);
 
     track("contact_form_submitted", {
       has_name: Boolean(String(formData.get("name") ?? "").trim()),
       has_email: Boolean(String(formData.get("email") ?? "").trim()),
+      provider: "formspree",
     });
 
     if (!form.checkValidity()) {
       form.reportValidity();
       setStatus("Please complete the required fields.", "error");
-      track("contact_form_error", { status: "validation" });
+      track("contact_form_error", { provider: "formspree", status: "validation" });
       return;
     }
 
-    if (String(formData.get("website") ?? "").trim()) {
+    if (String(formData.get("_gotcha") ?? "").trim()) {
       form.reset();
-      resetStartedAt();
       setStatus("Message sent - I will be in touch soon.", "success");
       return;
     }
-
-    const payload = {
-      email: String(formData.get("email") ?? ""),
-      message: String(formData.get("message") ?? ""),
-      name: String(formData.get("name") ?? ""),
-      startedAt: Number(formData.get("startedAt") ?? 0),
-      subject: String(formData.get("subject") ?? ""),
-      website: String(formData.get("website") ?? ""),
-    };
 
     submitButton.disabled = true;
     form.setAttribute("aria-busy", "true");
@@ -614,38 +601,34 @@ const initContactForm = () => {
       const timeoutId = globalThis.setTimeout(() => controller.abort(), 12_000);
       const response = await fetch(CONTACT_FORM_ENDPOINT, {
         method: "POST",
-        body: JSON.stringify(payload),
+        body: formData,
         headers: {
           Accept: "application/json",
-          "Content-Type": "application/json",
         },
         signal: controller.signal,
       }).finally(() => globalThis.clearTimeout(timeoutId));
 
-      const responseBody = await response.json().catch(() => null) as ContactApiResponse | null;
-      if (!response.ok || responseBody?.ok !== true) {
-        const requestError = new Error(responseBody?.error || "Form submission failed") as Error & {
-          requestId?: string;
+      const responseBody = await response.json().catch(() => null) as ContactSubmitResponse | null;
+      if (!response.ok || responseBody?.ok === false) {
+        const message = responseBody?.errors?.[0]?.message || "Form submission failed";
+        const requestError = new Error(message) as Error & {
           status?: number;
         };
-        requestError.requestId = responseBody?.requestId;
         requestError.status = response.status;
         throw requestError;
       }
 
       form.reset();
-      resetStartedAt();
       setStatus("Message sent - thanks.", "success");
       track("contact_form_success", {
-        request_id: responseBody.requestId ?? null,
+        provider: "formspree",
       });
     } catch (error) {
-      const contactError = error as Error & { requestId?: string; status?: number };
+      const contactError = error as Error & { status?: number };
       const statusCode = typeof contactError.status === "number" ? contactError.status : "network";
-      const reference = contactError.requestId ? ` Reference: ${contactError.requestId}.` : "";
-      setStatus(`Message could not send. Please try again in a moment.${reference}`, "error");
+      setStatus("Message could not send. Please try again in a moment.", "error");
       track("contact_form_error", {
-        request_id: contactError.requestId ?? null,
+        provider: "formspree",
         status: statusCode,
       });
     } finally {
@@ -662,7 +645,7 @@ const initContactFieldTracking = () => {
     const field = (event.target as Element | null)?.closest<HTMLInputElement | HTMLTextAreaElement>(
       ".contact-inbox input, .contact-inbox textarea",
     );
-    if (!field || field.name === "website" || field.type === "hidden" || focusedContactFields.has(field.name)) return;
+    if (!field || field.name === "_gotcha" || field.type === "hidden" || focusedContactFields.has(field.name)) return;
     focusedContactFields.add(field.name);
     track("contact_field_focused", { field: field.name });
   });
@@ -671,7 +654,7 @@ const initContactFieldTracking = () => {
     const field = (event.target as Element | null)?.closest<HTMLInputElement | HTMLTextAreaElement>(
       ".contact-inbox input, .contact-inbox textarea",
     );
-    if (!field || field.name === "website" || field.type === "hidden") return;
+    if (!field || field.name === "_gotcha" || field.type === "hidden") return;
     track("contact_field_completed", {
       field: field.name,
       has_value: Boolean(field.value.trim()),

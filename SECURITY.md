@@ -4,54 +4,42 @@ This document describes the current security posture for the portfolio.
 
 ## Secrets Management
 
-Secrets are managed through environment variables and are not committed to the
-repository.
+The production site is a static Vite app on Vercel. It does not store Resend,
+Supabase, Upstash, database, or server-side email credentials in this repo.
 
 | Variable | Scope | Purpose |
 | --- | --- | --- |
-| `RESEND_API_KEY` | Server only | Sends contact-form email through Resend |
-| `CONTACT_TO_EMAIL` | Server only | Receives contact-form messages |
-| `CONTACT_FROM_EMAIL` | Server only | Sender identity used by Resend |
-| `CONTACT_ALLOWED_ORIGINS` | Server only | Comma-separated list of allowed website origins |
-| `UPSTASH_REDIS_REST_URL` | Server only | Durable Redis-backed contact-form rate limiting |
-| `UPSTASH_REDIS_REST_TOKEN` | Server only | Upstash REST token for the contact-form limiter |
-| `CONTACT_ALLOW_MEMORY_RATE_LIMIT` | Server only | Emergency-only override for production rate-limit fallback |
 | `VITE_POSTHOG_KEY` | Browser | Public PostHog project token |
 | `VITE_POSTHOG_HOST` | Browser | PostHog ingest host |
 | `VITE_POSTHOG_SESSION_REPLAY` | Browser | Enables or disables PostHog session replay |
 
-Only variables prefixed with `VITE_` are exposed to the browser bundle. Keep
-Resend and contact-delivery settings server-only.
+Only variables prefixed with `VITE_` are exposed to the browser bundle. These
+values are public by design. The Formspree endpoint is wired directly into the
+form, while the destination inbox and spam controls are managed in the Formspree
+dashboard.
 
-If a secret is accidentally committed, revoke it in the provider dashboard,
-create a replacement, update Vercel, and remove the leaked value from git
-history.
+If a private provider token is accidentally committed in the future, revoke it in
+the provider dashboard, create a replacement, update Vercel, and remove the
+leaked value from git history.
 
 ## Contact Form Protections
 
-The `/api/contact` serverless function includes:
+The contact form submits to Formspree and includes:
 
 | Protection | Current behavior |
 | --- | --- |
-| Method guard | Only `POST` is accepted |
-| Content type guard | Requires `application/json` |
-| Origin allowlist | Requires an allowed `Origin` header in production |
-| Payload size guard | Rejects payloads over 10 KB |
-| Server-side validation | Validates name, email, subject, and message length |
-| Honeypot | Rejects submissions that fill the hidden `website` field |
-| Timing check | Rejects submissions posted too quickly after form start |
-| Rate limiting | Allows 5 submissions per IP per hour through Upstash Redis in production |
-| Diagnostics | Adds `X-Request-Id` and client-safe `requestId` values so failed submissions can be traced in Vercel logs |
-| Error handling | Returns generic client-safe errors and logs server-side details by request ID |
+| Browser validation | Requires name, email, subject, and message before submission |
+| Hidden honeypot | Uses `_gotcha` so obvious bots can be dropped without sending a message |
+| Hosted filtering | Formspree handles delivery, spam controls, and destination inbox routing |
+| CSP restrictions | `connect-src` and `form-action` allow Formspree explicitly |
+| Privacy controls | Form fields use `data-ph-no-capture`; analytics events never include submitted content |
+| Error handling | Network or Formspree failures show a generic retry message to visitors |
 
-### Rate Limiting Caveat
-
-The durable limiter requires `UPSTASH_REDIS_REST_URL` and
-`UPSTASH_REDIS_REST_TOKEN` in Vercel. In production, if either variable is
-missing or Upstash is temporarily unreachable, the API fails closed with `503`
-instead of sending email behind weaker in-memory protection. Local development
-still uses a module-scope `Map` fallback. `CONTACT_ALLOW_MEMORY_RATE_LIMIT=true`
-exists only as an emergency production override.
+Because there is no custom contact API in this version, there are no server-side
+email secrets, serverless function logs, or Redis rate-limit credentials to
+manage. If custom API behavior is reintroduced later, add server-side validation,
+origin checks, durable rate limiting, and secret-management documentation before
+shipping it.
 
 ## Security Headers
 
@@ -70,7 +58,7 @@ exists only as an emergency production override.
 | `X-Permitted-Cross-Domain-Policies` | Blocks legacy cross-domain policy files |
 
 Run the production URL through a header scanner after deploy, then confirm the
-site still loads fonts, analytics, and contact-form requests.
+site still loads assets, analytics, and Formspree contact-form requests.
 
 The CSP intentionally omits `'unsafe-inline'`. Hero animation constants live in
 data attributes and are applied by the trusted first-party script.
@@ -92,7 +80,7 @@ content.
 ## Dependency Hygiene
 
 - Run `npm audit` periodically and address high or critical findings.
-- Keep Vercel, Resend, and PostHog credentials scoped to this project.
+- Keep Vercel, Formspree, and PostHog credentials scoped to this project.
 - Review `package-lock.json` changes before merging dependency updates.
 
 ## Vulnerability Reports

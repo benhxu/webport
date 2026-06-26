@@ -1,6 +1,7 @@
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? "https://webport-mu-seven.vercel.app/");
 const shouldSendEmail = process.env.SMOKE_SEND_EMAIL === "true";
-const apiUrl = new URL("/api/contact", baseUrl);
+const formspreeEndpoint =
+  process.env.SMOKE_FORMSPREE_ENDPOINT ?? "https://formspree.io/f/mbdvorzn";
 
 let failed = false;
 
@@ -47,81 +48,53 @@ const expectNotContains = (value, needle, message) => {
   fail(`${message} still contains "${needle}"`);
 };
 
-console.log(`Smoke testing ${apiUrl.toString()}`);
+console.log(`Smoke testing ${baseUrl.toString()}`);
 
-const headResponse = await fetch(apiUrl, { method: "HEAD" });
-if (headResponse.status === 405) {
-  pass("HEAD /api/contact is blocked with 405");
+const pageResponse = await fetch(baseUrl, { method: "GET" });
+if (pageResponse.status === 200) {
+  pass("home page returns 200");
 } else {
-  fail(`HEAD /api/contact expected 405 but received ${headResponse.status}`);
+  fail(`home page expected 200 but received ${pageResponse.status}`);
 }
 
-expectHeader(headResponse.headers, "x-request-id");
-expectHeader(headResponse.headers, "cross-origin-resource-policy", "same-origin");
-expectHeader(headResponse.headers, "x-content-type-options", "nosniff");
-expectHeader(headResponse.headers, "x-frame-options", "DENY");
-expectHeader(headResponse.headers, "cache-control", "no-store");
+expectHeader(pageResponse.headers, "cross-origin-resource-policy", "same-origin");
+expectHeader(pageResponse.headers, "x-content-type-options", "nosniff");
+expectHeader(pageResponse.headers, "x-frame-options", "DENY");
 
-const csp = expectHeader(headResponse.headers, "content-security-policy");
+const csp = expectHeader(pageResponse.headers, "content-security-policy");
 expectContains(csp, "style-src 'self'", "CSP has strict style-src");
 expectNotContains(csp, "'unsafe-inline'", "CSP disallows inline styles");
+expectContains(csp, "connect-src 'self' https://formspree.io", "CSP allows Formspree fetches");
+expectContains(csp, "form-action 'self' https://formspree.io", "CSP allows Formspree form posts");
 expectContains(csp, "frame-ancestors 'none'", "CSP blocks framing");
 
-const timingResponse = await fetch(apiUrl, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Origin: baseUrl.origin,
-  },
-  body: JSON.stringify({
-    email: "smoke@example.com",
-    message: "This should fail timing before email delivery.",
-    name: "Smoke Test",
-    startedAt: Date.now(),
-    subject: "Smoke test",
-  }),
-});
-
-const rateLimitPolicy = timingResponse.headers.get("x-ratelimit-policy");
-expectHeader(timingResponse.headers, "x-request-id");
-
-if (timingResponse.status === 400 && rateLimitPolicy === "upstash") {
-  pass("POST timing smoke reached durable Upstash rate limiter without sending email");
-} else if (timingResponse.status === 429 && rateLimitPolicy === "upstash") {
-  pass("POST timing smoke was rate limited by durable Upstash policy");
-} else if (timingResponse.status === 503 && rateLimitPolicy === "missing-upstash") {
-  fail("Upstash is required in production but missing from Vercel environment variables");
-} else if (rateLimitPolicy === "memory-fallback") {
-  fail("Production is using memory-fallback rate limiting");
-} else {
-  fail(
-    `POST timing smoke expected 400/upstash but received ${timingResponse.status}/${rateLimitPolicy ?? "no-policy"}`,
-  );
-}
+const html = await pageResponse.text();
+expectContains(html, formspreeEndpoint, "contact form action uses Formspree");
+expectNotContains(html, "/api/contact", "page no longer references local contact API");
 
 if (shouldSendEmail) {
-  const deliveryResponse = await fetch(apiUrl, {
+  const body = new FormData();
+  body.set("name", "Codex Smoke Test");
+  body.set("email", "smoke@example.com");
+  body.set("subject", "Production contact smoke test");
+  body.set("message", "This is a Formspree delivery smoke test from Codex.");
+  body.set("_subject", "Production contact smoke test");
+
+  const deliveryResponse = await fetch(formspreeEndpoint, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      Origin: baseUrl.origin,
+      Accept: "application/json",
     },
-    body: JSON.stringify({
-      email: "smoke@example.com",
-      message: "This is a production contact delivery smoke test from Codex.",
-      name: "Codex Smoke Test",
-      startedAt: Date.now() - 5_000,
-      subject: "Production contact smoke test",
-    }),
+    body,
   });
   const deliveryBody = await deliveryResponse.json().catch(() => null);
 
-  if (deliveryResponse.status === 200 && deliveryBody?.ok === true) {
-    pass("Contact delivery smoke sent successfully");
+  if (deliveryResponse.ok && deliveryBody?.ok !== false) {
+    pass("Formspree delivery smoke sent successfully");
   } else {
     fail(
-      `Contact delivery smoke expected 200 but received ${deliveryResponse.status}: ${
-        deliveryBody?.error ?? "unknown error"
+      `Formspree delivery smoke expected success but received ${deliveryResponse.status}: ${
+        deliveryBody?.errors?.[0]?.message ?? "unknown error"
       }`,
     );
   }
