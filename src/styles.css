@@ -1020,14 +1020,6 @@
         line-height: 1.4;
       }
 
-      .form-status.is-success {
-        color: var(--amber);
-      }
-
-      .form-status.is-error {
-        color: #8f2f1c;
-      }
-
       @media (max-width: 980px) {
         .about-layout,
         .contact-card {
