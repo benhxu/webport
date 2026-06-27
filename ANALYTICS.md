@@ -49,7 +49,7 @@ Session replay masks every form input and excludes `.contact-inbox` text.
 | `performance_timing` | navigation timing and transfer values | How quickly did the page load? |
 | `resource_summary` | resource, script, image, stylesheet, and transfer counts | How heavy was the page for the visitor? |
 | `web_vitals` | `lcp_ms`, `cls`, `inp_ms`, long-task values | Did visitors experience layout shift or interaction lag? |
-| `client_error` | `type` | Did the browser encounter a runtime failure? |
+| `client_error` | `type`, bounded error details and source location | Did the browser encounter a runtime failure, and where? |
 | `color_scheme_changed` | `color_scheme` | Did the visitor's system color preference change during the session? |
 
 ## Suggested Dashboard

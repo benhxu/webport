@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light" />
-    <meta name="theme-color" content="#e6e7e1" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#e6e7e1" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#151719" media="(prefers-color-scheme: dark)" />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Ben Xu" />
     <meta name="creator" content="Ben Xu" />
@@ -51,7 +52,22 @@
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body data-provenance="BX-WEBPORT-SF-2026-0611">
-<section class="bridge-hero" id="home" data-bridge-hero>
+    <a class="skip-link" href="#about">Skip to content</a>
+
+    <header class="topline" aria-label="Primary">
+      <a class="brand" href="#home" aria-label="BX home" data-section-link>BX</a>
+      <div class="identity" aria-label="Positioning">
+        <span>Strategy &amp; Operations <i></i> GTM Ops <i></i> Systems Builder</span>
+      </div>
+      <nav class="nav">
+        <a href="#about" data-section-link>About</a>
+        <a href="#experience" data-section-link>Experience</a>
+        <a href="#contact" data-section-link>Contact</a>
+      </nav>
+    </header>
+
+    <main id="main-content">
+      <section class="bridge-hero" id="home" data-bridge-hero>
       <div class="bridge-photo" aria-hidden="true">
         <img
           src="/bridge-home-bg-960.jpg"
@@ -64,20 +80,9 @@
           fetchpriority="high"
         />
       </div>
+      <div class="pointer-light" aria-hidden="true"></div>
       <div class="paper-grain" aria-hidden="true"></div>
       <div class="home-dust" aria-hidden="true"></div>
-
-      <header class="topline" aria-label="Primary">
-        <a class="brand" href="#home" aria-label="BX home" data-section-link>BX</a>
-        <div class="identity" aria-label="Positioning">
-          <span>Strategy &amp; Operations <i></i> GTM Ops <i></i> Systems Builder</span>
-        </div>
-        <nav class="nav">
-          <a href="#about" data-section-link>About</a>
-          <a href="#experience" data-section-link>Experience</a>
-          <a href="#contact" data-section-link>Contact</a>
-        </nav>
-      </header>
 
       <svg class="workflow-lines" viewBox="0 0 1200 520" preserveAspectRatio="none" aria-hidden="true">
         <path class="quiet" data-lx="-54px" data-ly="-28px" data-lr="-7deg" d="M184 188 C 372 142, 472 196, 598 232" />
@@ -90,9 +95,9 @@
 
       <div class="settle-layer">
         <div class="label-group left" aria-hidden="true">
-          <h2 class="label-title orbit-object" data-ox="-140px" data-oy="-92px" data-or="-10deg" data-os="0.96" data-delay="120ms">
+          <p class="label-title orbit-object" data-ox="-140px" data-oy="-92px" data-or="-10deg" data-os="0.96" data-delay="120ms">
             <span class="orbit-inner">Messy inputs</span>
-          </h2>
+          </p>
           <span class="label-item orbit-object" data-ox="-210px" data-oy="74px" data-or="8deg" data-os="0.92" data-delay="180ms" data-float-delay="-180ms">
             <span class="orbit-inner">manual work</span><i></i>
           </span>
@@ -105,9 +110,9 @@
         </div>
 
         <div class="label-group right" aria-hidden="true">
-          <h2 class="label-title orbit-object" data-ox="138px" data-oy="-96px" data-or="9deg" data-os="0.96" data-delay="160ms">
+          <p class="label-title orbit-object" data-ox="138px" data-oy="-96px" data-or="9deg" data-os="0.96" data-delay="160ms">
             <span class="orbit-inner">Systems teams use</span>
-          </h2>
+          </p>
           <span class="label-item orbit-object" data-ox="218px" data-oy="58px" data-or="-8deg" data-os="0.93" data-delay="230ms" data-float-delay="-240ms">
             <i></i><span class="orbit-inner">dashboards</span>
           </span>
@@ -119,7 +124,7 @@
           </span>
         </div>
 
-        <main class="hero-copy">
+        <div class="hero-copy">
           <h1 class="headline" aria-label="I turn messy operations into systems teams actually use.">
             <span class="headline-word orbit-object" data-ox="-210px" data-oy="-118px" data-or="-8deg" data-os="0.94" data-delay="80ms"><span class="orbit-inner">I turn</span></span>
             <span class="headline-word orbit-object" data-ox="190px" data-oy="-132px" data-or="7deg" data-os="0.94" data-delay="170ms"><span class="orbit-inner">messy operations</span></span>
@@ -137,16 +142,16 @@
               <span class="orbit-inner">Contact</span>
             </a>
           </div>
-        </main>
+        </div>
       </div>
-    </section>
+      </section>
 
-    <main class="portfolio-world" aria-label="Portfolio sections">
-      <section class="story-section about-section" id="about">
+      <div class="portfolio-world" aria-label="Portfolio sections">
+      <section class="story-section about-section" id="about" aria-labelledby="about-title" tabindex="-1">
         <div class="section-shell about-layout">
           <div class="reveal">
             <p class="profile-quote">"I learned early how to navigate systems that did not come with clear instructions."</p>
-            <h2 class="section-title">Built by uncertainty. Driven by clarity.</h2>
+            <h2 class="section-title" id="about-title">Built by uncertainty. Driven by clarity.</h2>
             <p class="section-copy">
               I moved to America when I was one and was raised in San Francisco. That shows up in how I work now: I look for unclear handoffs, repeated manual work, and scattered information, then turn it into infrastructure teams can actually use.
             </p>
@@ -173,10 +178,10 @@
         </div>
       </section>
 
-      <section class="story-section experience-section" id="experience">
+      <section class="story-section experience-section" id="experience" aria-labelledby="experience-title">
         <div class="section-shell experience-layout">
           <div class="reveal">
-            <h2 class="section-title compact">Selected work.</h2>
+            <h2 class="section-title compact" id="experience-title">Selected work.</h2>
             <p class="section-copy">
               Two environments, one pattern: find the mess, build the system, make the result easier to use.
             </p>
@@ -238,11 +243,11 @@
         </div>
       </section>
 
-      <section class="story-section contact-section" id="contact">
+      <section class="story-section contact-section" id="contact" aria-labelledby="contact-title">
         <div class="section-shell">
           <div class="contact-card reveal">
             <div>
-              <h2 class="section-title">Let's talk operations, systems, or strategy.</h2>
+              <h2 class="section-title" id="contact-title">Let's talk operations, systems, or strategy.</h2>
               <p class="section-copy">
                 If your team has messy workflows, unclear reporting, or handoffs that keep slowing people down, send a note.
               </p>
@@ -262,7 +267,6 @@
               method="POST"
               data-contact-form
               data-ph-no-capture
-              novalidate
             >
               <input type="hidden" name="_subject" value="New portfolio contact form message" data-ph-no-capture />
               <div class="contact-honey" hidden aria-hidden="true" inert>
@@ -300,6 +304,7 @@
           </div>
         </div>
       </section>
+      </div>
     </main>
 
     <footer class="site-provenance" aria-label="Site ownership">

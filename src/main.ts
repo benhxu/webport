@@ -273,10 +273,18 @@ const initHeroMotion = () => {
     return;
   }
 
+  hero.classList.add("is-animating");
+
   const orbitObjects = Array.from(hero.querySelectorAll<HTMLElement>(".orbit-object"));
-  const canSwarm = !coarsePointerQuery.matches && !smallViewportQuery.matches && !computeLowPowerMode();
-  const introDuration = canSwarm ? 3400 : 1200;
+  const canSwarm =
+    !coarsePointerQuery.matches &&
+    !smallViewportQuery.matches &&
+    !computeLowPowerMode() &&
+    performance.now() < 1600;
+  const introDuration = canSwarm ? 3400 : 700;
   const orbitStart = performance.now();
+  const heroWidth = hero.clientWidth;
+  const heroHeight = hero.clientHeight;
   let orbitFrame = 0;
 
   const setOrbitState = (
@@ -285,13 +293,11 @@ const initHeroMotion = () => {
     y = 0,
     depth = 0,
     scale = 1,
-    blur = 0,
   ) => {
     element.style.setProperty("--orbit-float-x", `${x.toFixed(2)}px`);
     element.style.setProperty("--orbit-float-y", `${y.toFixed(2)}px`);
     element.style.setProperty("--orbit-depth", `${depth.toFixed(2)}px`);
     element.style.setProperty("--orbit-scale", scale.toFixed(3));
-    element.style.setProperty("--orbit-blur", `${blur.toFixed(2)}px`);
   };
 
   const setSwarmState = (
@@ -310,13 +316,12 @@ const initHeroMotion = () => {
   const runWordSphere = (now: number) => {
     if (hero.classList.contains("is-settled")) return;
 
-    const bounds = hero.getBoundingClientRect();
     const t = (now - orbitStart) / 1000;
     const resolveProgress = Math.min(1, (now - orbitStart) / introDuration);
     const collapse = Math.max(0, (resolveProgress - 0.64) / 0.36);
     const roam = 1 - collapse * collapse * (3 - 2 * collapse);
-    const fieldX = Math.min(520, bounds.width * 0.42);
-    const fieldY = Math.min(300, bounds.height * 0.34);
+    const fieldX = Math.min(520, heroWidth * 0.42);
+    const fieldY = Math.min(300, heroHeight * 0.34);
 
     orbitObjects.forEach((element, index) => {
       const ring = index % 5;
@@ -340,16 +345,20 @@ const initHeroMotion = () => {
       const y = Math.sin(t * (speed + 0.36) + phase * 1.14) * radius * 0.58 * roam;
       const z = Math.sin(t * (speed * 0.82) + phase) * 26 * roam;
       const scale = 1 + z / 900;
-      const blur = Math.max(0, z < -8 ? Math.abs(z) / 62 : 0);
 
       setSwarmState(element, travelX, travelY, travelRotation, travelScale);
-      setOrbitState(element, x, y, z, scale, blur);
+      setOrbitState(element, x, y, z, scale);
     });
 
     orbitFrame = window.requestAnimationFrame(runWordSphere);
   };
 
-  window.requestAnimationFrame(() => hero.classList.add("is-ready"));
+  window.requestAnimationFrame(() => {
+    hero.classList.add("is-ready");
+    if (!canSwarm) {
+      window.requestAnimationFrame(() => hero.classList.add("is-settled"));
+    }
+  });
   if (canSwarm) {
     orbitFrame = window.requestAnimationFrame(runWordSphere);
   }
@@ -383,8 +392,8 @@ const initHeroPointerLighting = () => {
     currentX += (targetX - currentX) * 0.07;
     currentY += (targetY - currentY) * 0.07;
 
-    hero.style.setProperty("--light-x", `${(currentX * 100).toFixed(2)}%`);
-    hero.style.setProperty("--light-y", `${(currentY * 100).toFixed(2)}%`);
+    hero.style.setProperty("--light-shift-x", `${((currentX - 0.5) * window.innerWidth * 0.24).toFixed(2)}px`);
+    hero.style.setProperty("--light-shift-y", `${((currentY - 0.46) * window.innerHeight * 0.2).toFixed(2)}px`);
     hero.style.setProperty("--parallax-x", `${((currentX - 0.5) * 4).toFixed(2)}px`);
     hero.style.setProperty("--parallax-y", `${((currentY - 0.46) * 3).toFixed(2)}px`);
 
@@ -397,12 +406,11 @@ const initHeroPointerLighting = () => {
     if (!raf) raf = window.requestAnimationFrame(render);
   };
 
-  window.addEventListener(
+  hero.addEventListener(
     "pointermove",
     (event) => {
-      const rect = hero.getBoundingClientRect();
-      targetX = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
-      targetY = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
+      targetX = Math.min(1, Math.max(0, event.clientX / window.innerWidth));
+      targetY = Math.min(1, Math.max(0, event.clientY / window.innerHeight));
       schedule();
     },
     { passive: true },
@@ -551,6 +559,7 @@ const initContactForm = () => {
   const submitButton = document.querySelector<HTMLButtonElement>("[data-contact-submit]");
   if (!form || !status || !submitButton) return;
 
+  form.noValidate = true;
   let formStartTracked = false;
 
   const markFormStarted = () => {
@@ -810,14 +819,40 @@ colorSchemeQuery.addEventListener("change", (event) => {
   });
 });
 
-window.addEventListener("error", () => {
+const describeRuntimeError = (value: unknown) => {
+  if (value instanceof Error) {
+    return {
+      error_name: value.name.slice(0, 80),
+      error_message: value.message.slice(0, 240),
+    };
+  }
+
+  return {
+    error_name: typeof value,
+    error_message: String(value ?? "Unknown error").slice(0, 240),
+  };
+};
+
+window.addEventListener("error", (event) => {
   updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
-  track("client_error", { type: "error" });
+  const source = event.filename
+    ? new URL(event.filename, window.location.href).pathname.split("/").pop() ?? null
+    : null;
+  track("client_error", {
+    type: "error",
+    error_message: event.message.slice(0, 240),
+    source,
+    line: event.lineno || null,
+    column: event.colno || null,
+  });
 });
 
-window.addEventListener("unhandledrejection", () => {
+window.addEventListener("unhandledrejection", (event) => {
   updateDebugMetric("errors", Number(debugMetrics.errors || 0) + 1);
-  track("client_error", { type: "unhandledrejection" });
+  track("client_error", {
+    type: "unhandledrejection",
+    ...describeRuntimeError(event.reason),
+  });
 });
 
 document.addEventListener("visibilitychange", () => {

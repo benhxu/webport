@@ -1,7 +1,9 @@
 const baseUrl = new URL(process.env.SMOKE_BASE_URL ?? "https://webport-mu-seven.vercel.app/");
 const shouldSendEmail = process.env.SMOKE_SEND_EMAIL === "true";
+const shouldSendAnalytics = process.env.SMOKE_SEND_ANALYTICS === "true";
 const formspreeEndpoint =
   process.env.SMOKE_FORMSPREE_ENDPOINT ?? "https://formspree.io/f/mbdvorzn";
+const posthogHost = new URL(process.env.SMOKE_POSTHOG_HOST ?? "https://us.i.posthog.com");
 
 let failed = false;
 
@@ -65,12 +67,63 @@ const csp = expectHeader(pageResponse.headers, "content-security-policy");
 expectContains(csp, "style-src 'self'", "CSP has strict style-src");
 expectNotContains(csp, "'unsafe-inline'", "CSP disallows inline styles");
 expectContains(csp, "connect-src 'self' https://formspree.io", "CSP allows Formspree fetches");
+expectContains(csp, posthogHost.origin, "CSP allows PostHog ingestion");
 expectContains(csp, "form-action 'self' https://formspree.io", "CSP allows Formspree form posts");
 expectContains(csp, "frame-ancestors 'none'", "CSP blocks framing");
 
 const html = await pageResponse.text();
 expectContains(html, formspreeEndpoint, "contact form action uses Formspree");
 expectNotContains(html, "/api/contact", "page no longer references local contact API");
+
+const scriptSources = Array.from(html.matchAll(/<script[^>]+src="([^"]+\.js)"/g), (match) => match[1]);
+const scriptBodies = [];
+
+for (const source of scriptSources) {
+  const scriptUrl = new URL(source, baseUrl);
+  const scriptResponse = await fetch(scriptUrl);
+  if (!scriptResponse.ok) {
+    fail(`browser bundle ${scriptUrl.pathname} returned ${scriptResponse.status}`);
+    continue;
+  }
+  scriptBodies.push(await scriptResponse.text());
+}
+
+const browserBundle = scriptBodies.join("\n");
+const posthogKey = browserBundle.match(/phc_[A-Za-z0-9_-]+/)?.[0] ?? null;
+
+if (posthogKey) {
+  pass("production bundle contains a configured PostHog project token");
+} else {
+  fail("production bundle is missing a configured PostHog project token");
+}
+
+expectContains(browserBundle, posthogHost.origin, "production bundle targets the expected PostHog host");
+
+if (shouldSendAnalytics && posthogKey) {
+  const eventResponse = await fetch(new URL("/e/", posthogHost), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      event: "portfolio_qa_smoke",
+      properties: {
+        token: posthogKey,
+        distinct_id: `portfolio-qa-${Date.now()}`,
+        $current_url: baseUrl.toString(),
+        source: "production_smoke_test",
+      },
+    }),
+  });
+
+  if (eventResponse.ok) {
+    pass("PostHog accepted the production analytics smoke event");
+  } else {
+    fail(`PostHog analytics smoke expected success but received ${eventResponse.status}`);
+  }
+} else if (!shouldSendAnalytics) {
+  console.log("SKIP PostHog ingestion smoke; set SMOKE_SEND_ANALYTICS=true to send one test event.");
+}
 
 if (shouldSendEmail) {
   const body = new FormData();

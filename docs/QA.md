@@ -69,6 +69,12 @@ Automated production smoke:
 npm run smoke:prod
 ```
 
+PostHog ingestion smoke, which sends a single `portfolio_qa_smoke` event:
+
+```bash
+npm run smoke:analytics
+```
+
 Contact delivery smoke, when you intentionally want to send one test message:
 
 ```bash
