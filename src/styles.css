@@ -1319,3 +1319,48 @@
   grid-column: 1 / -1;
   color: #e5b866;
 }
+
+.site-provenance {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 18px 24px;
+  color: rgba(39, 35, 30, 0.58);
+  border-top: 1px solid rgba(45, 39, 31, 0.1);
+  background: #e6e7e1;
+  font-size: 10px;
+  line-height: 1.4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.site-provenance a {
+  color: inherit;
+  text-underline-offset: 3px;
+}
+
+.site-provenance a:hover,
+.site-provenance a:focus-visible {
+  color: #2b251f;
+}
+
+.provenance-id {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.08em;
+}
+
+@media (max-width: 520px) {
+  .site-provenance {
+    min-height: 72px;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    padding-inline: 18px;
+    text-align: center;
+  }
+
+  .provenance-id {
+    flex-basis: 100%;
+  }
+}

@@ -1,0 +1,14 @@
+BEN XU PORTFOLIO - AUTHORSHIP AND PROVENANCE
+
+Original author and rights holder: Ben Xu
+Canonical publication: https://webport-mu-seven.vercel.app/
+Source repository: https://github.com/benhxu/webport
+First repository publication: 2026-06-11
+Provenance ID: BX-WEBPORT-SF-2026-0611
+
+The visual design, interaction design, written content, and original source code
+for this portfolio are copyright 2026 Ben Xu. All rights reserved.
+
+This record is intended to identify the original publication. No permission to
+copy, republish, sell, or create a derivative portfolio is granted by the public
+availability of the website or its source repository.
