@@ -132,6 +132,12 @@
         transition: transform 520ms var(--ease);
       }
 
+      .bridge-photo picture {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+
       .bridge-photo::after {
         content: "";
         position: absolute;
@@ -177,8 +183,6 @@
         height: 68px;
         padding: 0 clamp(22px, 3.8vw, 64px);
         background: linear-gradient(180deg, rgba(230, 231, 225, 0.66), rgba(230, 231, 225, 0));
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
       }
 
       .brand {
@@ -278,12 +282,6 @@
 
       .orbit-inner {
         display: block;
-        transform: translate3d(var(--orbit-float-x, 0px), var(--orbit-float-y, 0px), var(--orbit-depth, 0px))
-          scale(var(--orbit-scale, 1));
-        animation: softHover 1700ms ease-in-out infinite alternate;
-        animation-delay: var(--float-delay, 0ms);
-        transform-style: preserve-3d;
-        will-change: transform;
       }
 
       .is-ready .orbit-object {
@@ -303,9 +301,7 @@
       }
 
       .is-settled .orbit-inner {
-        animation: none;
-        transform: translate3d(0, 0, 0) scale(1);
-        will-change: auto;
+        transform: none;
       }
 
       .is-settled .orbit-object {
@@ -505,26 +501,14 @@
         background-size: 101px 91px, 151px 139px, 197px 181px;
       }
 
-      @keyframes softHover {
-        from {
-          transform: translate3d(-2px, -5px, 0);
-        }
-        to {
-          transform: translate3d(3px, 5px, 0);
-        }
-      }
-
       .portfolio-world {
         position: relative;
         overflow: hidden;
+        counter-reset: story-section;
         background:
           radial-gradient(circle at 16% 12%, rgba(250, 249, 242, 0.84), transparent 30rem),
           radial-gradient(circle at 86% 46%, rgba(168, 117, 36, 0.14), transparent 34rem),
           linear-gradient(180deg, #e6e7e1 0%, #ddded8 45%, #d1d2ca 100%);
-      }
-
-      .portfolio-world {
-        counter-reset: story-section;
       }
 
       .portfolio-world::before,
@@ -1072,9 +1056,7 @@
         .contact-card {
           gap: 42px;
         }
-      }
 
-      @media (max-width: 980px) {
         .topline {
           grid-template-columns: auto 1fr;
         }
@@ -1279,11 +1261,6 @@
       }
 
       @media (max-width: 680px), (pointer: coarse) {
-        .topline {
-          backdrop-filter: none;
-          -webkit-backdrop-filter: none;
-        }
-
         .paper-grain,
         .home-dust,
         .pointer-light,
@@ -1294,10 +1271,6 @@
 
         .bridge-hero::before {
           opacity: 0.055;
-        }
-
-        .orbit-inner {
-          animation: none;
         }
 
         .is-settled .orbit-object {
@@ -1323,8 +1296,7 @@
         }
 
         .orbit-inner {
-          animation: none;
-          transform: translate3d(0, 0, 0) scale(1);
+          transform: none;
         }
       }
 

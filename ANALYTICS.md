@@ -12,7 +12,6 @@ Add these environment variables locally and in Vercel:
 ```env
 VITE_POSTHOG_KEY=phc_your_project_key
 VITE_POSTHOG_HOST=https://us.i.posthog.com
-VITE_POSTHOG_SESSION_REPLAY=false
 ```
 
 Restart the development server or redeploy after changing them. In PostHog, use:
@@ -20,9 +19,8 @@ Restart the development server or redeploy after changing them. In PostHog, use:
 - **Activity** for individual events.
 - **Insights** for funnels, trends, and retention.
 - **Web analytics** for traffic and acquisition.
-- **Session replay** after setting `VITE_POSTHOG_SESSION_REPLAY=true`.
-
-Session replay masks every form input and excludes `.contact-inbox` text.
+Session replay is intentionally disabled. The smaller PostHog client receives the
+explicit event set without loading a recorder or capturing page and form contents.
 
 ## Useful Events
 

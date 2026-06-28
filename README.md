@@ -20,7 +20,7 @@ clarity.
 | Motion | CSS transforms plus vanilla TypeScript requestAnimationFrame |
 | Email | Formspree-hosted contact form |
 | Abuse protection | Browser validation, hidden honeypot, Formspree spam filtering, and strict CSP |
-| Analytics | PostHog custom events, optional masked session replay, optional custom beacon endpoint |
+| Analytics | PostHog custom events with an optional custom beacon endpoint |
 | Hosting | Vercel |
 
 No React, no CSS framework, and no runtime content CMS. The visible content for
@@ -67,7 +67,6 @@ Use `.env.local` locally and Vercel project environment variables in production.
 ```env
 VITE_POSTHOG_KEY=phc_your_project_key
 VITE_POSTHOG_HOST=https://us.i.posthog.com
-VITE_POSTHOG_SESSION_REPLAY=false
 ```
 
 The Formspree endpoint is public by design and is wired directly into the form.

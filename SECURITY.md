@@ -11,7 +11,6 @@ Supabase, Upstash, database, or server-side email credentials in this repo.
 | --- | --- | --- |
 | `VITE_POSTHOG_KEY` | Browser | Public PostHog project token |
 | `VITE_POSTHOG_HOST` | Browser | PostHog ingest host |
-| `VITE_POSTHOG_SESSION_REPLAY` | Browser | Enables or disables PostHog session replay |
 
 Only variables prefixed with `VITE_` are exposed to the browser bundle. These
 values are public by design. The Formspree endpoint is wired directly into the
@@ -68,8 +67,7 @@ data attributes and are applied by the trusted first-party script.
 PostHog is configured to use explicit custom events:
 
 - `autocapture: false` avoids accidental capture of arbitrary page text.
-- Session replay is disabled unless `VITE_POSTHOG_SESSION_REPLAY=true`.
-- Session replay masks all inputs when enabled.
+- Session replay and external PostHog dependency loading are disabled.
 - The contact form and every contact field use `data-ph-no-capture`.
 - No `posthog.identify()` call is used, so anonymous visitors are not tied to a
   known identity by this app.

@@ -44,9 +44,10 @@
     <link
       rel="preload"
       as="image"
-      href="/bridge-home-bg-960.jpg"
-      imagesrcset="/bridge-home-bg-640.jpg 640w, /bridge-home-bg-960.jpg 960w, /bridge-home-bg.jpg 1536w"
+      href="/src/assets/bridge-home-bg-960.webp"
+      imagesrcset="/src/assets/bridge-home-bg-640.webp 640w, /src/assets/bridge-home-bg-960.webp 960w, /src/assets/bridge-home-bg.webp 1536w"
       imagesizes="100vw"
+      type="image/webp"
       fetchpriority="high"
     />
     <link rel="stylesheet" href="/src/styles.css" />
@@ -69,16 +70,23 @@
     <main id="main-content">
       <section class="bridge-hero" id="home" data-bridge-hero>
       <div class="bridge-photo" aria-hidden="true">
-        <img
-          src="/bridge-home-bg-960.jpg"
-          srcset="/bridge-home-bg-640.jpg 640w, /bridge-home-bg-960.jpg 960w, /bridge-home-bg.jpg 1536w"
-          sizes="100vw"
-          width="1536"
-          height="1024"
-          alt=""
-          decoding="async"
-          fetchpriority="high"
-        />
+        <picture>
+          <source
+            type="image/webp"
+            srcset="/src/assets/bridge-home-bg-640.webp 640w, /src/assets/bridge-home-bg-960.webp 960w, /src/assets/bridge-home-bg.webp 1536w"
+            sizes="100vw"
+          />
+          <img
+            src="/src/assets/bridge-home-bg-960.jpg"
+            srcset="/src/assets/bridge-home-bg-640.jpg 640w, /src/assets/bridge-home-bg-960.jpg 960w, /src/assets/bridge-home-bg.jpg 1536w"
+            sizes="100vw"
+            width="1536"
+            height="1024"
+            alt=""
+            decoding="async"
+            fetchpriority="high"
+          />
+        </picture>
       </div>
       <div class="pointer-light" aria-hidden="true"></div>
       <div class="paper-grain" aria-hidden="true"></div>
@@ -98,13 +106,13 @@
           <p class="label-title orbit-object" data-ox="-140px" data-oy="-92px" data-or="-10deg" data-os="0.96" data-delay="120ms">
             <span class="orbit-inner">Messy inputs</span>
           </p>
-          <span class="label-item orbit-object" data-ox="-210px" data-oy="74px" data-or="8deg" data-os="0.92" data-delay="180ms" data-float-delay="-180ms">
+          <span class="label-item orbit-object" data-ox="-210px" data-oy="74px" data-or="8deg" data-os="0.92" data-delay="180ms">
             <span class="orbit-inner">manual work</span><i></i>
           </span>
-          <span class="label-item orbit-object" data-ox="-116px" data-oy="-154px" data-or="-14deg" data-os="0.94" data-delay="260ms" data-float-delay="-520ms">
+          <span class="label-item orbit-object" data-ox="-116px" data-oy="-154px" data-or="-14deg" data-os="0.94" data-delay="260ms">
             <span class="orbit-inner">scattered data</span><i></i>
           </span>
-          <span class="label-item orbit-object" data-ox="-240px" data-oy="-22px" data-or="13deg" data-os="0.95" data-delay="330ms" data-float-delay="-340ms">
+          <span class="label-item orbit-object" data-ox="-240px" data-oy="-22px" data-or="13deg" data-os="0.95" data-delay="330ms">
             <span class="orbit-inner">handoffs</span><i></i>
           </span>
         </div>
@@ -113,13 +121,13 @@
           <p class="label-title orbit-object" data-ox="138px" data-oy="-96px" data-or="9deg" data-os="0.96" data-delay="160ms">
             <span class="orbit-inner">Systems teams use</span>
           </p>
-          <span class="label-item orbit-object" data-ox="218px" data-oy="58px" data-or="-8deg" data-os="0.93" data-delay="230ms" data-float-delay="-240ms">
+          <span class="label-item orbit-object" data-ox="218px" data-oy="58px" data-or="-8deg" data-os="0.93" data-delay="230ms">
             <i></i><span class="orbit-inner">dashboards</span>
           </span>
-          <span class="label-item orbit-object" data-ox="114px" data-oy="-152px" data-or="12deg" data-os="0.93" data-delay="310ms" data-float-delay="-610ms">
+          <span class="label-item orbit-object" data-ox="114px" data-oy="-152px" data-or="12deg" data-os="0.93" data-delay="310ms">
             <i></i><span class="orbit-inner">workflows</span>
           </span>
-          <span class="label-item orbit-object" data-ox="244px" data-oy="-18px" data-or="-12deg" data-os="0.95" data-delay="380ms" data-float-delay="-440ms">
+          <span class="label-item orbit-object" data-ox="244px" data-oy="-18px" data-or="-12deg" data-os="0.95" data-delay="380ms">
             <i></i><span class="orbit-inner">decisions</span>
           </span>
         </div>

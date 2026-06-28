@@ -5,7 +5,7 @@ The production setup uses:
 - GitHub for source control
 - Vercel for the static Vite website
 - Formspree for contact-form email delivery
-- PostHog for analytics and optional masked session replay
+- PostHog for explicit custom analytics events
 
 ## Environment Variables
 
@@ -14,7 +14,6 @@ Add these in Vercel under **Project Settings > Environment Variables**:
 ```text
 VITE_POSTHOG_KEY            — PostHog project token
 VITE_POSTHOG_HOST           — https://us.i.posthog.com
-VITE_POSTHOG_SESSION_REPLAY — false unless you are intentionally reviewing masked session replay
 ```
 
 The Formspree endpoint is public. The receiving inbox is configured in

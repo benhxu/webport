@@ -74,6 +74,9 @@ expectContains(csp, "frame-ancestors 'none'", "CSP blocks framing");
 const html = await pageResponse.text();
 expectContains(html, formspreeEndpoint, "contact form action uses Formspree");
 expectNotContains(html, "/api/contact", "page no longer references local contact API");
+expectContains(html, 'type="image/webp"', "hero serves a WebP source");
+expectContains(html, "/assets/bridge-home-bg-640-", "hero uses hashed responsive assets");
+expectNotContains(html, "/src/assets/", "production HTML contains no source asset paths");
 
 const scriptSources = Array.from(html.matchAll(/<script[^>]+src="([^"]+\.js)"/g), (match) => match[1]);
 const scriptBodies = [];
@@ -98,6 +101,7 @@ if (posthogKey) {
 }
 
 expectContains(browserBundle, posthogHost.origin, "production bundle targets the expected PostHog host");
+expectContains(browserBundle, "module.slim-", "production bundle uses the slim PostHog path");
 
 if (shouldSendAnalytics && posthogKey) {
   const eventResponse = await fetch(new URL("/e/", posthogHost), {

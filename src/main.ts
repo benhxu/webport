@@ -2,13 +2,13 @@ const CONTACT_FORM_ENDPOINT = "https://formspree.io/f/mbdvorzn";
 const ANALYTICS_ENDPOINT = import.meta.env.VITE_ANALYTICS_ENDPOINT ?? "";
 const POSTHOG_KEY = import.meta.env.VITE_POSTHOG_KEY ?? "";
 const POSTHOG_HOST = import.meta.env.VITE_POSTHOG_HOST ?? "https://us.i.posthog.com";
-const POSTHOG_SESSION_REPLAY = import.meta.env.VITE_POSTHOG_SESSION_REPLAY === "true";
 const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "true";
 const sessionStartedAt = performance.now();
 const colorSchemeQuery = window.matchMedia("(prefers-color-scheme: light)");
 const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
 const smallViewportQuery = window.matchMedia("(max-width: 680px)");
+const mobilePowerQuery = window.matchMedia("(max-width: 760px)");
 
 type TrackPayload = Record<string, string | number | boolean | null>;
 type DebugValue = string | number | boolean | null;
@@ -56,7 +56,7 @@ const sessionId = (() => {
 })();
 
 const computeLowPowerMode = () => {
-  const isMobile = window.matchMedia("(max-width: 760px)").matches;
+  const isMobile = mobilePowerQuery.matches;
   const reducedMotion = reducedMotionQuery.matches;
   const hardwareConcurrency = navigator.hardwareConcurrency || 8;
   const deviceMemory = "deviceMemory" in navigator
@@ -77,11 +77,13 @@ const computeLowPowerMode = () => {
   );
 };
 
+let lowPowerMode = computeLowPowerMode();
+
 const debugMetrics: Record<string, DebugValue> = {
   active_section: "Landing Page",
   analytics: "initializing",
   errors: 0,
-  low_power_mode: computeLowPowerMode(),
+  low_power_mode: lowPowerMode,
   scroll_depth: "0%",
 };
 let debugPanel: HTMLElement | null = null;
@@ -93,7 +95,6 @@ const applyMotionTokens = () => {
     ["or", "--or"],
     ["os", "--os"],
     ["delay", "--delay"],
-    ["floatDelay", "--float-delay"],
   ] as const;
   const lineProperties = [
     ["lx", "--lx"],
@@ -162,7 +163,7 @@ const buildAnalyticsPayload = (eventName: string, payload: TrackPayload = {}) =>
   screen_width: window.screen.width,
   screen_height: window.screen.height,
   color_scheme: colorSchemeQuery.matches ? "light" : "dark",
-  low_power_mode: computeLowPowerMode(),
+  low_power_mode: lowPowerMode,
   ...payload,
 });
 
@@ -232,20 +233,20 @@ const initAnalyticsProvider = async () => {
   }
 
   try {
-    const { default: posthog } = await import("posthog-js");
+    const { default: posthog } = await import("posthog-js/dist/module.slim");
     posthog.init(POSTHOG_KEY, {
       api_host: POSTHOG_HOST,
+      advanced_disable_flags: true,
+      capture_heatmaps: false,
       capture_pageview: true,
-      capture_pageleave: true,
+      capture_pageleave: false,
       autocapture: false,
       debug: DEBUG_MODE,
-      disable_session_recording: !POSTHOG_SESSION_REPLAY,
+      disable_external_dependency_loading: true,
+      disable_session_recording: true,
+      disable_surveys: true,
       person_profiles: "identified_only",
-      persistence: "localStorage+cookie",
-      session_recording: {
-        maskAllInputs: true,
-        maskTextSelector: ".contact-inbox",
-      },
+      persistence: "localStorage",
     });
 
     window.posthog = posthog;
@@ -255,7 +256,7 @@ const initAnalyticsProvider = async () => {
     updateDebugMetric("analytics", "posthog ready");
     track("analytics_provider_ready", {
       provider: "posthog",
-      session_recording: POSTHOG_SESSION_REPLAY,
+      session_recording: false,
     });
   } catch (error) {
     updateDebugMetric("analytics", "failed");
@@ -279,26 +280,13 @@ const initHeroMotion = () => {
   const canSwarm =
     !coarsePointerQuery.matches &&
     !smallViewportQuery.matches &&
-    !computeLowPowerMode() &&
+    !lowPowerMode &&
     performance.now() < 1600;
   const introDuration = canSwarm ? 3400 : 700;
   const orbitStart = performance.now();
   const heroWidth = hero.clientWidth;
   const heroHeight = hero.clientHeight;
   let orbitFrame = 0;
-
-  const setOrbitState = (
-    element: HTMLElement,
-    x = 0,
-    y = 0,
-    depth = 0,
-    scale = 1,
-  ) => {
-    element.style.setProperty("--orbit-float-x", `${x.toFixed(2)}px`);
-    element.style.setProperty("--orbit-float-y", `${y.toFixed(2)}px`);
-    element.style.setProperty("--orbit-depth", `${depth.toFixed(2)}px`);
-    element.style.setProperty("--orbit-scale", scale.toFixed(3));
-  };
 
   const setSwarmState = (
     element: HTMLElement,
@@ -324,13 +312,11 @@ const initHeroMotion = () => {
     const fieldY = Math.min(300, heroHeight * 0.34);
 
     orbitObjects.forEach((element, index) => {
-      const ring = index % 5;
       const groupWeight = element.closest(".headline")
         ? 1
         : element.closest(".label-group")
           ? 0.72
           : 0.94;
-      const radius = 7 + ring * 3.8;
       const phase = index * 0.86;
       const speed = 0.82 + (index % 4) * 0.18;
       const pathX = fieldX * (0.42 + (index % 4) * 0.15) * groupWeight;
@@ -341,13 +327,8 @@ const initHeroMotion = () => {
       const travelY = (Math.sin(ellipse * 0.84) * pathY + Math.cos(counter) * pathY * 0.18) * roam;
       const travelRotation = Math.sin(ellipse + phase) * 9 * roam;
       const travelScale = 1 + Math.sin(counter + index) * 0.035 * roam;
-      const x = Math.cos(t * (speed + 0.22) + phase) * radius * roam;
-      const y = Math.sin(t * (speed + 0.36) + phase * 1.14) * radius * 0.58 * roam;
-      const z = Math.sin(t * (speed * 0.82) + phase) * 26 * roam;
-      const scale = 1 + z / 900;
 
       setSwarmState(element, travelX, travelY, travelRotation, travelScale);
-      setOrbitState(element, x, y, z, scale);
     });
 
     orbitFrame = window.requestAnimationFrame(runWordSphere);
@@ -367,7 +348,6 @@ const initHeroMotion = () => {
     if (orbitFrame) window.cancelAnimationFrame(orbitFrame);
     orbitObjects.forEach((element) => {
       setSwarmState(element);
-      setOrbitState(element);
     });
     hero.classList.add("is-settled");
     track("hero_assembly_completed", { duration_ms: introDuration });
@@ -376,7 +356,7 @@ const initHeroMotion = () => {
 
 const initHeroPointerLighting = () => {
   const hero = document.querySelector<HTMLElement>("[data-bridge-hero]");
-  if (!hero || reducedMotionQuery.matches || coarsePointerQuery.matches || computeLowPowerMode()) return;
+  if (!hero || reducedMotionQuery.matches || coarsePointerQuery.matches || lowPowerMode) return;
 
   let raf = 0;
   let targetX = 0.5;
@@ -523,31 +503,38 @@ const initNavigationTracking = () => {
 };
 
 const initScrollDepthTracking = () => {
-  let scrollQueued = false;
+  let scrollTimer = 0;
+
+  const measureScrollDepth = () => {
+    scrollTimer = 0;
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollable <= 0) return;
+    const depth = Math.min(100, Math.round((window.scrollY / scrollable) * 100));
+    if (depth <= maxScrollDepth) return;
+
+    maxScrollDepth = depth;
+    updateDebugMetric("scroll_depth", `${depth}%`);
+    [25, 50, 75, 100].forEach((milestone) => {
+      if (depth < milestone || scrollMilestones.has(milestone)) return;
+      scrollMilestones.add(milestone);
+      track("page_scroll_depth", {
+        depth_percent: milestone,
+        active_section: activeSectionId,
+      });
+    });
+  };
+
+  const supportsScrollEnd = "onscrollend" in (window as unknown as Record<string, unknown>);
+  if (supportsScrollEnd) {
+    window.addEventListener("scrollend", measureScrollDepth, { passive: true });
+    return;
+  }
 
   window.addEventListener(
     "scroll",
     () => {
-      if (scrollQueued) return;
-      scrollQueued = true;
-      window.requestAnimationFrame(() => {
-        scrollQueued = false;
-        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-        if (scrollable <= 0) return;
-        const depth = Math.min(100, Math.round((window.scrollY / scrollable) * 100));
-        if (depth > maxScrollDepth) {
-          maxScrollDepth = depth;
-          updateDebugMetric("scroll_depth", `${depth}%`);
-          [25, 50, 75, 100].forEach((milestone) => {
-            if (depth < milestone || scrollMilestones.has(milestone)) return;
-            scrollMilestones.add(milestone);
-            track("page_scroll_depth", {
-              depth_percent: milestone,
-              active_section: activeSectionId,
-            });
-          });
-        }
-      });
+      if (scrollTimer) return;
+      scrollTimer = globalThis.setTimeout(measureScrollDepth, 160);
     },
     { passive: true },
   );
@@ -691,18 +678,16 @@ const initClickTracking = () => {
         href: action instanceof HTMLAnchorElement ? action.href : null,
         id: action.id || null,
       });
+
+      if (action instanceof HTMLAnchorElement && action.target === "_blank") {
+        track("outbound_link_clicked", {
+          destination: action.hostname,
+          label: action.getAttribute("aria-label") || action.textContent?.trim() || null,
+        });
+      }
     },
     { capture: true },
   );
-
-  document.addEventListener("click", (event) => {
-    const link = (event.target as Element | null)?.closest<HTMLAnchorElement>("a[target='_blank']");
-    if (!link) return;
-    track("outbound_link_clicked", {
-      destination: link.hostname,
-      label: link.getAttribute("aria-label") || link.textContent?.trim() || null,
-    });
-  });
 };
 
 const initPerformanceAnalytics = () => {
@@ -897,7 +882,8 @@ window.addEventListener("pagehide", () => {
 });
 
 window.addEventListener("resize", () => {
-  updateDebugMetric("low_power_mode", computeLowPowerMode());
+  lowPowerMode = computeLowPowerMode();
+  updateDebugMetric("low_power_mode", lowPowerMode);
 }, { passive: true });
 
 initHeroMotion();
@@ -924,7 +910,7 @@ track("section_viewed", {
 });
 
 window.addEventListener("load", () => {
-  scheduleIdle(initAnalyticsProvider, 900);
+  scheduleIdle(initAnalyticsProvider, lowPowerMode ? 2400 : 900);
   scheduleIdle(trackLoadPerformance, 1200);
   scheduleIdle(() => {
     const connection = getNetworkInformation();
@@ -934,7 +920,7 @@ window.addEventListener("load", () => {
         : null,
       effective_connection_type: connection?.effectiveType ?? null,
       hardware_concurrency: navigator.hardwareConcurrency || null,
-      low_power_mode: computeLowPowerMode(),
+      low_power_mode: lowPowerMode,
       network_downlink: connection?.downlink ?? null,
       network_rtt: connection?.rtt ?? null,
       save_data: Boolean(connection?.saveData),
